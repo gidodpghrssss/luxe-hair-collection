@@ -13,7 +13,7 @@ const EnhancedChatbot: React.FC<EnhancedChatbotProps> = ({ initialOpen = false }
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Use our Nebius-powered chat hook
-  const { messages, isLoading, error, sendMessage, resetChat } = useNebiusChat({
+  const { messages, isLoading, error, sendMessage, resetChat, sessionId } = useNebiusChat({
     temperature: 0.7,
     maxTokens: 1000,
     model: 'meta-llama/Meta-Llama-3.1-70B-Instruct', // Specify the model to use

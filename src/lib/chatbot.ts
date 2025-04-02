@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import OpenAI from 'openai';
+import axios from 'axios';
 
 // Interface for chat messages
 export interface ChatMessage {
@@ -43,29 +44,83 @@ export function useNebiusChat(options: ChatbotOptions = {}) {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>('');
+
+  // Initialize session ID and load chat history
+  useEffect(() => {
+    // Generate a session ID if not exists
+    const storedSessionId = localStorage.getItem('chatSessionId');
+    const newSessionId = storedSessionId || `session_${Date.now()}`;
+    
+    if (!storedSessionId) {
+      localStorage.setItem('chatSessionId', newSessionId);
+    }
+    
+    setSessionId(newSessionId);
+    
+    // Load chat history from database
+    const loadChatHistory = async () => {
+      try {
+        const response = await axios.get(`/api/chat/history?sessionId=${newSessionId}`);
+        if (response.data.messages && response.data.messages.length > 0) {
+          // Ensure the roles are correctly typed
+          const typedMessages = response.data.messages.map((msg: any) => ({
+            role: msg.role as 'user' | 'assistant' | 'system',
+            content: msg.content
+          }));
+          setMessages(typedMessages);
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+        // Fall back to default system message if history can't be loaded
+      }
+    };
+    
+    loadChatHistory();
+  }, [options.systemPrompt]);
+
+  // Save message to database
+  const saveMessage = async (message: ChatMessage) => {
+    try {
+      await axios.post('/api/chat/history', {
+        sessionId,
+        role: message.role,
+        content: message.content
+      });
+    } catch (err) {
+      console.error('Failed to save message to database:', err);
+      // Continue even if saving fails - the UI will still work
+    }
+  };
 
   // Function to send a message to the chatbot
   const sendMessage = async (userMessage: string) => {
     if (!userMessage.trim()) return;
 
+    // Create user message
+    const userMsg: ChatMessage = { role: 'user', content: userMessage };
+    
     // Add user message to the chat
-    const newMessages = [
-      ...messages,
-      { role: 'user', content: userMessage },
-    ];
+    const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsLoading(true);
     setError(null);
+
+    // Save user message to database
+    await saveMessage(userMsg);
 
     try {
       // Call Nebius API for inference
       const response = await fetchNebiusResponse(newMessages, options);
       
+      // Create assistant message
+      const assistantMsg: ChatMessage = { role: 'assistant', content: response };
+      
       // Add assistant response to the chat
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { role: 'assistant', content: response },
-      ]);
+      setMessages((prevMessages) => [...prevMessages, assistantMsg]);
+      
+      // Save assistant message to database
+      await saveMessage(assistantMsg);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get a response. Please try again.';
       setError(errorMessage);
@@ -76,14 +131,22 @@ export function useNebiusChat(options: ChatbotOptions = {}) {
   };
 
   // Function to reset the chat
-  const resetChat = () => {
-    setMessages([
-      {
-        role: 'system',
-        content: options.systemPrompt || DEFAULT_SYSTEM_PROMPT,
-      },
-    ]);
+  const resetChat = async () => {
+    const systemMsg: ChatMessage = {
+      role: 'system',
+      content: options.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+    };
+    
+    setMessages([systemMsg]);
     setError(null);
+    
+    // Generate new session ID
+    const newSessionId = `session_${Date.now()}`;
+    localStorage.setItem('chatSessionId', newSessionId);
+    setSessionId(newSessionId);
+    
+    // Save system message to database
+    await saveMessage(systemMsg);
   };
 
   return {
@@ -92,6 +155,7 @@ export function useNebiusChat(options: ChatbotOptions = {}) {
     error,
     sendMessage,
     resetChat,
+    sessionId,
   };
 }
 
@@ -143,51 +207,4 @@ async function fetchNebiusResponse(
     // Fallback response if API fails
     throw new Error("I'm sorry, I'm having trouble connecting to my knowledge base right now. Please try again later or contact our support team for immediate assistance.");
   }
-}
-
-// Hook for managing chat history in local storage
-export function useChatHistory() {
-  const [chatHistory, setChatHistory] = useState<{ [key: string]: ChatMessage[] }>({});
-
-  // Load chat history from local storage on initial render
-  useEffect(() => {
-    const storedHistory = localStorage.getItem('luxeHairChatHistory');
-    if (storedHistory) {
-      setChatHistory(JSON.parse(storedHistory));
-    }
-  }, []);
-
-  // Save chat history to local storage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('luxeHairChatHistory', JSON.stringify(chatHistory));
-  }, [chatHistory]);
-
-  // Function to save a chat session
-  const saveChat = (sessionId: string, messages: ChatMessage[]) => {
-    setChatHistory((prev) => ({
-      ...prev,
-      [sessionId]: messages,
-    }));
-  };
-
-  // Function to load a chat session
-  const loadChat = (sessionId: string): ChatMessage[] | null => {
-    return chatHistory[sessionId] || null;
-  };
-
-  // Function to delete a chat session
-  const deleteChat = (sessionId: string) => {
-    setChatHistory((prev) => {
-      const newHistory = { ...prev };
-      delete newHistory[sessionId];
-      return newHistory;
-    });
-  };
-
-  return {
-    chatHistory,
-    saveChat,
-    loadChat,
-    deleteChat,
-  };
 }
