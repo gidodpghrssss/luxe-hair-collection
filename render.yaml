@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: luxe-hair-collection
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_NEBIUS_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_NEBIUS_API_URL
+        value: https://api.studio.nebius.com/v1/
+      - key: MONGODB_URI
+        sync: false
+      - key: NEXTAUTH_URL
+        fromService:
+          type: web
+          name: luxe-hair-collection
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+    autoDeploy: true
+    healthCheckPath: /api/health
