@@ -1,136 +1,79 @@
 # Luxe Hair Collection
 
-A modern e-commerce platform for high-quality hair products including wigs, extensions, and more. This platform features both a customer-facing storefront and an admin dashboard with AI-powered tools.
+A Python Flask web application for a luxury synthetic hair extensions brand.
 
 ## Features
 
-### Customer Side
-- Responsive design for both desktop and mobile
-- Virtual try-on powered by AI
-- AI chatbot for FAQs and customer support
-- Category and tag-based search
-- Seamless integration with Shopify for payments and order management
-- Modern, elegant UI focused on beauty and luxury
-
-### Admin Side
-- Comprehensive dashboard with sales analytics and visualizations
-- AI agent (powered by Nebius) for inventory management, customer insights, and business operations
-- User management system
-- Product and inventory management
-- Offer and promotion management
-- Integration with Shopify APIs
+- User authentication (login/register)
+- Product catalog with filtering
+- Product detail pages
+- User profiles with chat history
+- Admin dashboard for product and user management
+- AI-powered chatbot for customer support
+- Responsive design for all devices
 
 ## Technology Stack
-- Frontend: React.js, Next.js
-- Backend: Node.js, Express
-- Database: PostgreSQL (via Render)
-- ORM: Prisma
-- AI: Nebius API for LLM integration
-- Deployment: Render
-- E-commerce: Shopify API integration
-- Styling: Tailwind CSS
 
-## AI Features
+- **Backend**: Python Flask
+- **Database**: PostgreSQL
+- **ORM**: SQLAlchemy
+- **Authentication**: Flask-Login
+- **Frontend**: HTML, CSS, JavaScript, Bootstrap 5
+- **AI Integration**: Nebius API for chatbot functionality
 
-### Nebius-Powered Chatbot
-The platform includes an intelligent customer service chatbot powered by Nebius AI. This chatbot:
-- Provides instant responses to customer inquiries about products, shipping, returns, etc.
-- Offers personalized product recommendations based on customer preferences
-- Helps customers navigate the site and find the right hair products
-- Collects valuable customer feedback and insights
-- Utilizes Meta's Llama 3.1 70B Instruct model for high-quality, contextually relevant responses
+## Installation
 
-### Virtual Try-On
-The virtual try-on feature allows customers to:
-- Upload their photo or use their webcam
-- Visualize how different hair products would look on them
-- Experiment with various styles, colors, and lengths
-- Share their virtual looks on social media
+1. Clone the repository:
+```
+git clone https://github.com/gidodpghrssss/luxe-hair-collection.git
+cd luxe-hair-collection
+```
 
-### Admin AI Assistant
-The admin dashboard includes a Nebius-powered AI assistant that:
-- Analyzes sales data to identify trends and opportunities
-- Provides inventory management recommendations
-- Helps create targeted marketing campaigns
-- Generates reports and insights for business decision-making
-- Uses a lower temperature setting (0.3) for more focused and precise business analytics
+2. Create a virtual environment and activate it:
+```
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-## Getting Started
+3. Install dependencies:
+```
+pip install -r requirements.txt
+```
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- PostgreSQL (for local development)
-- Shopify Partner account
-- Nebius API key
+4. Set up environment variables:
+Create a `.env` file in the root directory with the following variables:
+```
+DATABASE_URL=postgresql://username:password@localhost:5432/luxedb
+SECRET_KEY=your_secret_key_here
+NEBIUS_API_KEY=your_nebius_api_key
+NEBIUS_API_URL=https://api.nebius.ai/v1/chat/completions
+```
 
-### Installation
-1. Clone the repository
-2. Install dependencies with `npm install`
-3. Set up environment variables (see `.env.example`)
-4. Run the development server with `npm run dev`
+5. Initialize the database:
+```
+flask run
+```
+The database tables will be created automatically on first run.
 
-## Nebius API Integration
-To use the AI features, you'll need to:
-1. Sign up for a Nebius account at [nebius.com](https://nebius.com)
-2. Create an API key in your Nebius dashboard
-3. Add the API key to your `.env` file as `NEXT_PUBLIC_NEBIUS_API_KEY`
-4. Add the API URL to your `.env` file as `NEXT_PUBLIC_NEBIUS_API_URL` (default: https://api.studio.nebius.com/v1/)
+## Deployment on Render
 
-### Model Configuration
-The chatbot is configured to use the Meta Llama 3.1 70B Instruct model through the Nebius API with the following optimized parameters:
+This application is configured for deployment on Render with a PostgreSQL database.
 
-- **Customer Chatbot:**
-  - Model: `meta-llama/Meta-Llama-3.1-70B-Instruct`
-  - Temperature: 0.7 (balanced creativity and accuracy)
-  - Max Tokens: 1000 (suitable for detailed product explanations)
-  - System Prompt: Customized for hair product customer service
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Set the following:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn app:app`
+4. Add the environment variables in the Render dashboard
+5. Create a PostgreSQL database in Render and link it to your web service
 
-- **Admin AI Assistant:**
-  - Model: `meta-llama/Meta-Llama-3.1-70B-Instruct`
-  - Temperature: 0.3 (focused on accurate business insights)
-  - Max Tokens: 1500 (allows for detailed analytics and recommendations)
-  - System Prompt: Optimized for business intelligence and data analysis
+## Project Structure
 
-### Implementation Details
-The chatbot implementation uses the OpenAI-compatible API provided by Nebius, allowing for:
-- Seamless integration with the OpenAI JavaScript SDK
-- Efficient message handling and streaming
-- Error handling with appropriate fallback responses
-- Conversation history management
-- Responsive UI with typing indicators and message formatting
+- `app.py`: Main application file with routes and database models
+- `templates/`: HTML templates
+- `static/`: CSS, JavaScript, and image files
+- `requirements.txt`: Python dependencies
 
-## Deployment
-This application is configured for deployment on Render. See the `render.yaml` file for configuration details.
+## License
 
-### Deploying to Render
-1. Create a Render account at [render.com](https://render.com)
-2. Connect your GitHub repository to Render
-3. Render will automatically detect the `render.yaml` file and create the necessary services
-4. Set up the following environment variables in the Render dashboard:
-   - `NEXT_PUBLIC_NEBIUS_API_KEY`: Your Nebius API key
-   - `SHOPIFY_API_KEY`: Your Shopify API key
-   - `SHOPIFY_API_SECRET`: Your Shopify API secret
-5. Deploy your application
-
-The deployment will automatically:
-- Install all dependencies (including TypeScript type definitions)
-- Build the application
-- Start the server
-- Set up health checks for monitoring
-- Create and configure a PostgreSQL database
-
-### Database Setup
-The application uses PostgreSQL via Render's managed database service:
-- A PostgreSQL database is automatically provisioned when you deploy
-- The connection string is automatically injected into your application
-- Prisma handles database migrations and schema management
-- No manual database setup is required
-
-### TypeScript Configuration
-When deploying to Render, all TypeScript errors will be addressed during the build process as the necessary type definitions will be installed automatically:
-- `@types/react`
-- `@types/node`
-- `@types/react-dom`
-
-No need to install these packages locally unless you want to resolve TypeScript errors in your development environment.
+This project is licensed under the MIT License - see the LICENSE file for details.

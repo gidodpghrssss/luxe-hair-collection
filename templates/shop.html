@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Shop - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Our Products</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="input-group">
+            <input type="text" id="search-input" class="form-control" placeholder="Search products...">
+            <button class="btn btn-outline-secondary" type="button" id="search-button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4 ms-auto">
+        <select class="form-select" id="category-filter">
+            <option value="">All Categories</option>
+            <option value="straight">Straight</option>
+            <option value="wavy">Wavy</option>
+            <option value="curly">Curly</option>
+        </select>
+    </div>
+</div>
+
+<div class="row" id="product-container">
+    {% for product in products %}
+    <div class="col-md-4 mb-4 product-card" data-category="{{ product.category }}">
+        <div class="card h-100">
+            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text text-truncate">{{ product.description }}</p>
+                <p class="card-text fw-bold">${{ "%.2f"|format(product.price) }}</p>
+                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-primary">View Details</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not products %}
+<div class="alert alert-info">
+    No products available at the moment. Please check back later.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const categoryFilter = document.getElementById('category-filter');
+        const productCards = document.querySelectorAll('.product-card');
+        
+        function filterProducts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const category = categoryFilter.value;
+            
+            productCards.forEach(card => {
+                const productName = card.querySelector('.card-title').textContent.toLowerCase();
+                const productCategory = card.dataset.category;
+                const matchesSearch = productName.includes(searchTerm);
+                const matchesCategory = category === '' || productCategory === category;
+                
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        searchButton.addEventListener('click', filterProducts);
+        searchInput.addEventListener('keyup', filterProducts);
+        categoryFilter.addEventListener('change', filterProducts);
+    });
+</script>
+{% endblock %}

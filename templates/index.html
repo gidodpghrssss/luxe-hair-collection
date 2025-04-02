@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Luxe Hair Collection - Premium Synthetic Hair Extensions{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+    <h1 class="display-4">Welcome to Luxe Hair Collection</h1>
+    <p class="lead">Premium quality synthetic hair extensions for every style and occasion.</p>
+    <hr class="my-4">
+    <p>Discover our wide range of high-quality synthetic hair products designed to enhance your natural beauty.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('shop') }}" role="button">Shop Now</a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Featured Products</h2>
+    </div>
+</div>
+
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text">${{ "%.2f"|format(product.price) }}</p>
+                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary">View Details</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Why Choose Luxe Hair Collection?</h2>
+    </div>
+</div>
+
+<div class="row text-center">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <i class="fas fa-crown fa-3x mb-3 text-primary"></i>
+                <h4 class="card-title">Premium Quality</h4>
+                <p class="card-text">Our synthetic hair extensions are made with the highest quality materials for a natural look and feel.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <i class="fas fa-palette fa-3x mb-3 text-primary"></i>
+                <h4 class="card-title">Wide Variety</h4>
+                <p class="card-text">Choose from a wide range of colors, lengths, and styles to match your unique personality.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <i class="fas fa-heart fa-3x mb-3 text-primary"></i>
+                <h4 class="card-title">Customer Satisfaction</h4>
+                <p class="card-text">We're dedicated to ensuring you're completely satisfied with your Luxe Hair Collection purchase.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Customer Testimonials</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-3">
+                    <span class="text-warning">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </span>
+                </div>
+                <p class="card-text">"I absolutely love my new hair extensions! They blend perfectly with my natural hair and feel so soft. Will definitely purchase again!"</p>
+                <p class="text-end fw-bold">- Sarah M.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-3">
+                    <span class="text-warning">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </span>
+                </div>
+                <p class="card-text">"The quality of these extensions is amazing for the price. They look so natural that even my hairdresser was impressed!"</p>
+                <p class="text-end fw-bold">- Jessica T.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-3">
+                    <span class="text-warning">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </span>
+                </div>
+                <p class="card-text">"Fast shipping and excellent customer service. The extensions are beautiful and exactly as described. Will be ordering more colors soon!"</p>
+                <p class="text-end fw-bold">- Michelle K.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
