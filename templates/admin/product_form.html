@@ -1,0 +1,403 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if product %}Edit Product{% else %}Add New Product{% endif %}{% endblock %}
+
+{% block extra_css %}
+<!-- Dropzone CSS -->
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">{% if product %}Edit Product{% else %}Add New Product{% endif %}</h1>
+        <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Products
+        </a>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="post" action="{{ url_for('admin_edit_product', product_id=product.id) if product else url_for('admin_add_product') }}" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Left Column - Basic Information -->
+                    <div class="col-lg-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Basic Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Product Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ product.name if product else '' }}" required>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sku" class="form-label">SKU</label>
+                                        <input type="text" class="form-control" id="sku" name="sku" value="{{ product.sku if product else '' }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="category" class="form-label">Category</label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="">Select Category</option>
+                                            <option value="brazilian" {% if product and product.category == 'brazilian' %}selected{% endif %}>Brazilian Hair</option>
+                                            <option value="peruvian" {% if product and product.category == 'peruvian' %}selected{% endif %}>Peruvian Hair</option>
+                                            <option value="malaysian" {% if product and product.category == 'malaysian' %}selected{% endif %}>Malaysian Hair</option>
+                                            <option value="indian" {% if product and product.category == 'indian' %}selected{% endif %}>Indian Hair</option>
+                                            <option value="accessories" {% if product and product.category == 'accessories' %}selected{% endif %}>Accessories</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="price" class="form-label">Price ($)</label>
+                                        <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" value="{{ product.price if product else '' }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sale_price" class="form-label">Sale Price ($) <small class="text-muted">(Optional)</small></label>
+                                        <input type="number" class="form-control" id="sale_price" name="sale_price" min="0" step="0.01" value="{{ product.sale_price if product and product.sale_price else '' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="6" required>{{ product.description if product else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Product Variants</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Length Options</label>
+                                    <div class="row" id="lengthOptions">
+                                        {% if product and product.length_options %}
+                                            {% for length in product.length_options %}
+                                                <div class="col-md-3 mb-2 length-option">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" name="length_options[]" value="{{ length }}">
+                                                        <button type="button" class="btn btn-outline-danger remove-option">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="col-md-3 mb-2 length-option">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="length_options[]" placeholder="e.g. 12 inches">
+                                                    <button type="button" class="btn btn-outline-danger remove-option">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addLengthOption">
+                                        <i class="fas fa-plus me-1"></i> Add Length Option
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Color Options</label>
+                                    <div class="row" id="colorOptions">
+                                        {% if product and product.color_options %}
+                                            {% for color in product.color_options %}
+                                                <div class="col-md-3 mb-2 color-option">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" name="color_options[]" value="{{ color }}">
+                                                        <button type="button" class="btn btn-outline-danger remove-option">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="col-md-3 mb-2 color-option">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="color_options[]" placeholder="e.g. Natural Black">
+                                                    <button type="button" class="btn btn-outline-danger remove-option">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addColorOption">
+                                        <i class="fas fa-plus me-1"></i> Add Color Option
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">SEO Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="meta_title" class="form-label">Meta Title</label>
+                                    <input type="text" class="form-control" id="meta_title" name="meta_title" value="{{ product.meta_title if product and product.meta_title else '' }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="meta_description" class="form-label">Meta Description</label>
+                                    <textarea class="form-control" id="meta_description" name="meta_description" rows="3">{{ product.meta_description if product and product.meta_description else '' }}</textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="meta_keywords" class="form-label">Meta Keywords</label>
+                                    <input type="text" class="form-control" id="meta_keywords" name="meta_keywords" value="{{ product.meta_keywords if product and product.meta_keywords else '' }}" placeholder="Separate keywords with commas">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column - Images, Inventory, Status -->
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Product Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="active" {% if product and product.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="inactive" {% if product and product.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                        <option value="out_of_stock" {% if product and product.status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="featured" class="form-label">Featured Product</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="featured" name="featured" {% if product and product.featured %}checked{% endif %}>
+                                        <label class="form-check-label" for="featured">Display on homepage</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Inventory</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="stock" class="form-label">Stock Quantity</label>
+                                    <input type="number" class="form-control" id="stock" name="stock" min="0" value="{{ product.stock if product else '0' }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="low_stock_threshold" class="form-label">Low Stock Threshold</label>
+                                    <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" min="0" value="{{ product.low_stock_threshold if product and product.low_stock_threshold else '5' }}">
+                                    <div class="form-text">You'll be notified when stock falls below this number.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="track_inventory" name="track_inventory" {% if product and product.track_inventory %}checked{% endif %}>
+                                        <label class="form-check-label" for="track_inventory">Track inventory</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Product Images</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="main_image" class="form-label">Main Image</label>
+                                    <input type="file" class="form-control" id="main_image" name="main_image" accept="image/*">
+                                    {% if product and product.image_url %}
+                                        <div class="mt-2">
+                                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-thumbnail" style="max-height: 150px;">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Additional Images</label>
+                                    <div id="additionalImages" class="dropzone"></div>
+                                    <div class="form-text">Drag and drop images or click to upload.</div>
+                                    
+                                    {% if product and product.additional_images %}
+                                        <div class="row mt-3">
+                                            {% for image in product.additional_images %}
+                                                <div class="col-4 mb-2">
+                                                    <div class="position-relative">
+                                                        <img src="{{ image }}" alt="Product image" class="img-thumbnail">
+                                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 remove-image" data-image-url="{{ image }}">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </a>
+                    <div>
+                        {% if product %}
+                            <button type="button" class="btn btn-outline-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteProductModal">
+                                <i class="fas fa-trash me-1"></i> Delete
+                            </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> {% if product %}Update{% else %}Create{% endif %} Product
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Product Modal -->
+{% if product %}
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProductModalLabel">Delete Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                <p><strong>{{ product.name }}</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{{ url_for('admin_delete_product') }}">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<!-- Dropzone JS -->
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Dropzone for additional images
+        Dropzone.autoDiscover = false;
+        
+        const additionalImagesDropzone = new Dropzone("#additionalImages", {
+            url: "{{ url_for('admin_upload_product_image') }}",
+            paramName: "image",
+            maxFilesize: 5, // MB
+            acceptedFiles: "image/*",
+            addRemoveLinks: true,
+            dictDefaultMessage: "Drop images here or click to upload",
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token }}"
+            },
+            init: function() {
+                this.on("success", function(file, response) {
+                    // Add hidden input with image URL
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'additional_images[]';
+                    hiddenInput.value = response.image_url;
+                    document.querySelector('form').appendChild(hiddenInput);
+                    
+                    // Store the input reference on the file
+                    file.hiddenInput = hiddenInput;
+                });
+                
+                this.on("removedfile", function(file) {
+                    // Remove the hidden input when file is removed
+                    if (file.hiddenInput) {
+                        file.hiddenInput.remove();
+                    }
+                });
+            }
+        });
+        
+        // Length options
+        const lengthOptionsContainer = document.getElementById('lengthOptions');
+        const addLengthOptionBtn = document.getElementById('addLengthOption');
+        
+        addLengthOptionBtn.addEventListener('click', function() {
+            const newOption = document.createElement('div');
+            newOption.className = 'col-md-3 mb-2 length-option';
+            newOption.innerHTML = `
+                <div class="input-group">
+                    <input type="text" class="form-control" name="length_options[]" placeholder="e.g. 12 inches">
+                    <button type="button" class="btn btn-outline-danger remove-option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            lengthOptionsContainer.appendChild(newOption);
+        });
+        
+        // Color options
+        const colorOptionsContainer = document.getElementById('colorOptions');
+        const addColorOptionBtn = document.getElementById('addColorOption');
+        
+        addColorOptionBtn.addEventListener('click', function() {
+            const newOption = document.createElement('div');
+            newOption.className = 'col-md-3 mb-2 color-option';
+            newOption.innerHTML = `
+                <div class="input-group">
+                    <input type="text" class="form-control" name="color_options[]" placeholder="e.g. Natural Black">
+                    <button type="button" class="btn btn-outline-danger remove-option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            colorOptionsContainer.appendChild(newOption);
+        });
+        
+        // Remove option buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-option') || e.target.closest('.remove-option')) {
+                const button = e.target.classList.contains('remove-option') ? e.target : e.target.closest('.remove-option');
+                const optionDiv = button.closest('.length-option') || button.closest('.color-option');
+                optionDiv.remove();
+            }
+        });
+        
+        // Remove image buttons
+        const removeImageButtons = document.querySelectorAll('.remove-image');
+        removeImageButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const imageUrl = this.getAttribute('data-image-url');
+                
+                // Create a hidden input to tell the server to remove this image
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'remove_images[]';
+                hiddenInput.value = imageUrl;
+                document.querySelector('form').appendChild(hiddenInput);
+                
+                // Remove the image preview
+                this.closest('.col-4').remove();
+            });
+        });
+    });
+</script>
+{% endblock %}

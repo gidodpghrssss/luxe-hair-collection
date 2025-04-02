@@ -1,0 +1,490 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Orders Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Orders Management</h1>
+        <div>
+            <button class="btn btn-outline-secondary me-2" id="exportOrdersBtn">
+                <i class="fas fa-file-export me-1"></i> Export
+            </button>
+            <button class="btn btn-primary" id="refreshOrdersBtn">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filters and Search -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('admin_orders') }}">
+                <div class="row align-items-end">
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ request.args.get('search', '') }}" placeholder="Order ID, Customer name...">
+                    </div>
+                    <div class="col-md-2 mb-3 mb-md-0">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="processing" {% if request.args.get('status') == 'processing' %}selected{% endif %}>Processing</option>
+                            <option value="shipped" {% if request.args.get('status') == 'shipped' %}selected{% endif %}>Shipped</option>
+                            <option value="delivered" {% if request.args.get('status') == 'delivered' %}selected{% endif %}>Delivered</option>
+                            <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3 mb-md-0">
+                        <label for="date_range" class="form-label">Date Range</label>
+                        <select class="form-select" id="date_range" name="date_range">
+                            <option value="">All Time</option>
+                            <option value="today" {% if request.args.get('date_range') == 'today' %}selected{% endif %}>Today</option>
+                            <option value="yesterday" {% if request.args.get('date_range') == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                            <option value="last_7_days" {% if request.args.get('date_range') == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="last_30_days" {% if request.args.get('date_range') == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                            <option value="this_month" {% if request.args.get('date_range') == 'this_month' %}selected{% endif %}>This Month</option>
+                            <option value="last_month" {% if request.args.get('date_range') == 'last_month' %}selected{% endif %}>Last Month</option>
+                            <option value="custom" {% if request.args.get('date_range') == 'custom' %}selected{% endif %}>Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3 mb-md-0">
+                        <label for="sort" class="form-label">Sort By</label>
+                        <select class="form-select" id="sort" name="sort">
+                            <option value="date_desc" {% if request.args.get('sort') == 'date_desc' %}selected{% endif %}>Date (Newest First)</option>
+                            <option value="date_asc" {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>Date (Oldest First)</option>
+                            <option value="total_desc" {% if request.args.get('sort') == 'total_desc' %}selected{% endif %}>Total (High to Low)</option>
+                            <option value="total_asc" {% if request.args.get('sort') == 'total_asc' %}selected{% endif %}>Total (Low to High)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter me-1"></i> Apply Filters
+                        </button>
+                        <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-1"></i> Reset
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Custom Date Range (initially hidden) -->
+                <div class="row mt-3" id="customDateRange" style="display: none;">
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+                    </div>
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Orders Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">All Orders</h6>
+            <span class="badge bg-primary">{{ orders|length }} Orders</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input order-checkbox" type="checkbox" value="{{ order.id }}">
+                                </div>
+                            </td>
+                            <td>#{{ order.id }}</td>
+                            <td>
+                                <div>{{ order.user.name }}</div>
+                                <small class="text-muted">{{ order.user.email }}</small>
+                            </td>
+                            <td>
+                                <div>{{ order.order_date.strftime('%b %d, %Y') }}</div>
+                                <small class="text-muted">{{ order.order_date.strftime('%I:%M %p') }}</small>
+                            </td>
+                            <td>{{ order.items|length }} item(s)</td>
+                            <td>${{ order.total_amount }}</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif order.status == 'processing' %}
+                                    <span class="badge bg-info">Processing</span>
+                                {% elif order.status == 'shipped' %}
+                                    <span class="badge bg-primary">Shipped</span>
+                                {% elif order.status == 'delivered' %}
+                                    <span class="badge bg-success">Delivered</span>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><h6 class="dropdown-header">Change Status</h6></li>
+                                        <li><a class="dropdown-item change-status" href="#" data-order-id="{{ order.id }}" data-status="processing">Mark as Processing</a></li>
+                                        <li><a class="dropdown-item change-status" href="#" data-order-id="{{ order.id }}" data-status="shipped">Mark as Shipped</a></li>
+                                        <li><a class="dropdown-item change-status" href="#" data-order-id="{{ order.id }}" data-status="delivered">Mark as Delivered</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item change-status text-danger" href="#" data-order-id="{{ order.id }}" data-status="cancelled">Cancel Order</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Bulk Actions -->
+            <div class="mt-3">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="bulkActionBtn" disabled>
+                        Bulk Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item bulk-status-change" href="#" data-status="processing">Mark as Processing</a></li>
+                        <li><a class="dropdown-item bulk-status-change" href="#" data-status="shipped">Mark as Shipped</a></li>
+                        <li><a class="dropdown-item bulk-status-change" href="#" data-status="delivered">Mark as Delivered</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item bulk-status-change text-danger" href="#" data-status="cancelled">Cancel Orders</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_orders', page=page-1, **request.args) if page > 1 else '#' }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin_orders', page=p, **request.args) }}">{{ p }}</a>
+                        </li>
+                    {% endfor %}
+                    <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_orders', page=page+1, **request.args) if page < total_pages else '#' }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Export Orders Modal -->
+<div class="modal fade" id="exportOrdersModal" tabindex="-1" aria-labelledby="exportOrdersModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportOrdersModalLabel">Export Orders</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('admin_export_orders') }}">
+                    <div class="mb-3">
+                        <label for="export_format" class="form-label">Export Format</label>
+                        <select class="form-select" id="export_format" name="export_format" required>
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="export_date_range" class="form-label">Date Range</label>
+                        <select class="form-select" id="export_date_range" name="export_date_range">
+                            <option value="all_time">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last_7_days">Last 7 Days</option>
+                            <option value="last_30_days">Last 30 Days</option>
+                            <option value="this_month">This Month</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row" id="exportCustomDateRange" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            <label for="export_start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="export_start_date" name="export_start_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="export_end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="export_end_date" name="export_end_date">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="export_status" class="form-label">Order Status</label>
+                        <select class="form-select" id="export_status" name="export_status">
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Export Orders</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Status Change Modal -->
+<div class="modal fade" id="confirmStatusChangeModal" tabindex="-1" aria-labelledby="confirmStatusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmStatusChangeModalLabel">Confirm Status Change</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="statusChangeMessage">Are you sure you want to change the status of this order?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{{ url_for('admin_update_order_status') }}" id="updateStatusForm">
+                    <input type="hidden" name="order_id" id="statusChangeOrderId">
+                    <input type="hidden" name="status" id="statusChangeNewStatus">
+                    <button type="submit" class="btn btn-primary">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Status Change Modal -->
+<div class="modal fade" id="bulkStatusChangeModal" tabindex="-1" aria-labelledby="bulkStatusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkStatusChangeModalLabel">Confirm Bulk Status Change</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="bulkStatusChangeMessage">Are you sure you want to change the status of the selected orders?</p>
+                <p id="selectedOrdersCount" class="text-primary"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{{ url_for('admin_bulk_update_order_status') }}" id="bulkUpdateStatusForm">
+                    <input type="hidden" name="order_ids" id="bulkStatusChangeOrderIds">
+                    <input type="hidden" name="status" id="bulkStatusChangeNewStatus">
+                    <button type="submit" class="btn btn-primary">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Date range filter
+        const dateRangeSelect = document.getElementById('date_range');
+        const customDateRange = document.getElementById('customDateRange');
+        
+        dateRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.style.display = 'flex';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+        });
+        
+        // Initialize custom date range display
+        if (dateRangeSelect.value === 'custom') {
+            customDateRange.style.display = 'flex';
+        }
+        
+        // Export modal
+        const exportOrdersBtn = document.getElementById('exportOrdersBtn');
+        const exportDateRangeSelect = document.getElementById('export_date_range');
+        const exportCustomDateRange = document.getElementById('exportCustomDateRange');
+        
+        exportOrdersBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('exportOrdersModal'));
+            modal.show();
+        });
+        
+        exportDateRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                exportCustomDateRange.style.display = 'flex';
+            } else {
+                exportCustomDateRange.style.display = 'none';
+            }
+        });
+        
+        // Refresh button
+        const refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
+        refreshOrdersBtn.addEventListener('click', function() {
+            window.location.reload();
+        });
+        
+        // Select all checkbox
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+        const bulkActionBtn = document.getElementById('bulkActionBtn');
+        
+        selectAllCheckbox.addEventListener('change', function() {
+            orderCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            
+            updateBulkActionButton();
+        });
+        
+        // Individual checkboxes
+        orderCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateBulkActionButton();
+                
+                // Update "select all" checkbox
+                selectAllCheckbox.checked = [...orderCheckboxes].every(cb => cb.checked);
+                selectAllCheckbox.indeterminate = !selectAllCheckbox.checked && [...orderCheckboxes].some(cb => cb.checked);
+            });
+        });
+        
+        // Update bulk action button state
+        function updateBulkActionButton() {
+            const checkedCount = [...orderCheckboxes].filter(cb => cb.checked).length;
+            bulkActionBtn.disabled = checkedCount === 0;
+        }
+        
+        // Change status buttons
+        const changeStatusButtons = document.querySelectorAll('.change-status');
+        const statusChangeOrderIdInput = document.getElementById('statusChangeOrderId');
+        const statusChangeNewStatusInput = document.getElementById('statusChangeNewStatus');
+        const statusChangeMessage = document.getElementById('statusChangeMessage');
+        
+        changeStatusButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const orderId = this.getAttribute('data-order-id');
+                const newStatus = this.getAttribute('data-status');
+                
+                statusChangeOrderIdInput.value = orderId;
+                statusChangeNewStatusInput.value = newStatus;
+                
+                // Update message based on status
+                let statusText = '';
+                switch (newStatus) {
+                    case 'processing':
+                        statusText = 'processing';
+                        break;
+                    case 'shipped':
+                        statusText = 'shipped';
+                        break;
+                    case 'delivered':
+                        statusText = 'delivered';
+                        break;
+                    case 'cancelled':
+                        statusText = 'cancelled';
+                        break;
+                    default:
+                        statusText = newStatus;
+                }
+                
+                statusChangeMessage.textContent = `Are you sure you want to mark Order #${orderId} as ${statusText}?`;
+                
+                const modal = new bootstrap.Modal(document.getElementById('confirmStatusChangeModal'));
+                modal.show();
+            });
+        });
+        
+        // Bulk status change
+        const bulkStatusChangeButtons = document.querySelectorAll('.bulk-status-change');
+        const bulkStatusChangeOrderIdsInput = document.getElementById('bulkStatusChangeOrderIds');
+        const bulkStatusChangeNewStatusInput = document.getElementById('bulkStatusChangeNewStatus');
+        const bulkStatusChangeMessage = document.getElementById('bulkStatusChangeMessage');
+        const selectedOrdersCountElement = document.getElementById('selectedOrdersCount');
+        
+        bulkStatusChangeButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const newStatus = this.getAttribute('data-status');
+                
+                const selectedOrderIds = [...orderCheckboxes]
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                
+                if (selectedOrderIds.length === 0) {
+                    return;
+                }
+                
+                bulkStatusChangeOrderIdsInput.value = selectedOrderIds.join(',');
+                bulkStatusChangeNewStatusInput.value = newStatus;
+                
+                // Update message based on status
+                let statusText = '';
+                switch (newStatus) {
+                    case 'processing':
+                        statusText = 'processing';
+                        break;
+                    case 'shipped':
+                        statusText = 'shipped';
+                        break;
+                    case 'delivered':
+                        statusText = 'delivered';
+                        break;
+                    case 'cancelled':
+                        statusText = 'cancelled';
+                        break;
+                    default:
+                        statusText = newStatus;
+                }
+                
+                bulkStatusChangeMessage.textContent = `Are you sure you want to mark the selected orders as ${statusText}?`;
+                selectedOrdersCountElement.textContent = `You are about to update ${selectedOrderIds.length} order(s).`;
+                
+                const modal = new bootstrap.Modal(document.getElementById('bulkStatusChangeModal'));
+                modal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Shop - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Shop Our Collection</h1>
+    
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form action="{{ url_for('shop') }}" method="get" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Search products..." value="{{ search_term }}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="categoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if current_category %}{{ current_category }}{% else %}All Categories{% endif %}
+                </button>
+                <ul class="dropdown-menu w-100" aria-labelledby="categoryDropdown">
+                    <li><a class="dropdown-item" href="{{ url_for('shop') }}">All Categories</a></li>
+                    {% for category in categories %}
+                        <li><a class="dropdown-item" href="{{ url_for('shop', category=category) }}">{{ category }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Tags -->
+    <div class="mb-4">
+        <h5>Popular Tags</h5>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('shop', search='brazilian') }}" class="badge bg-secondary text-decoration-none">Brazilian</a>
+            <a href="{{ url_for('shop', search='peruvian') }}" class="badge bg-secondary text-decoration-none">Peruvian</a>
+            <a href="{{ url_for('shop', search='malaysian') }}" class="badge bg-secondary text-decoration-none">Malaysian</a>
+            <a href="{{ url_for('shop', search='indian') }}" class="badge bg-secondary text-decoration-none">Indian</a>
+            <a href="{{ url_for('shop', search='curly') }}" class="badge bg-secondary text-decoration-none">Curly</a>
+            <a href="{{ url_for('shop', search='straight') }}" class="badge bg-secondary text-decoration-none">Straight</a>
+            <a href="{{ url_for('shop', search='wavy') }}" class="badge bg-secondary text-decoration-none">Wavy</a>
+            <a href="{{ url_for('shop', search='lace') }}" class="badge bg-secondary text-decoration-none">Lace Front</a>
+            <a href="{{ url_for('shop', search='clip-in') }}" class="badge bg-secondary text-decoration-none">Clip-in</a>
+            <a href="{{ url_for('shop', search='tape-in') }}" class="badge bg-secondary text-decoration-none">Tape-in</a>
+        </div>
+    </div>
+    
+    <!-- Products Grid -->
+    <div class="row">
+        {% if products %}
+            {% for product in products %}
+                <div class="col-md-3 mb-4">
+                    <div class="card product-card h-100">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="{{ product.name }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                {% if product.sale_price %}
+                                    <p class="card-text mb-0">
+                                        <span class="text-decoration-line-through text-muted">${{ product.price }}</span>
+                                        <span class="text-danger fw-bold">${{ product.sale_price }}</span>
+                                    </p>
+                                    <span class="badge bg-danger">Sale</span>
+                                {% else %}
+                                    <p class="card-text mb-0">${{ product.price }}</p>
+                                    {% if 'new' in product.tags %}
+                                        <span class="badge bg-success">New</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                                <form action="{{ url_for('add_to_cart') }}" method="post">
+                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <h3>No products found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+                <a href="{{ url_for('shop') }}" class="btn btn-primary">View All Products</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Product filtering functionality could be added here
+        // For now, we're using server-side filtering
+    });
+</script>
+{% endblock %}

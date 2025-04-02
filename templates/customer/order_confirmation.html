@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i> Order Confirmed!
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h5>Thank you for your order!</h5>
+                        <p>Your order has been received and is now being processed.</p>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-info-circle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6 class="alert-heading">Order Information</h6>
+                                <p class="mb-0">A confirmation email has been sent to {{ current_user.email }}. Please check your inbox for details.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Order Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Order Number:</div>
+                                <div class="col-md-8">{{ order.id }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Order Date:</div>
+                                <div class="col-md-8">{{ order.order_date.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Order Status:</div>
+                                <div class="col-md-8">
+                                    {% if order.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif order.status == 'processing' %}
+                                        <span class="badge bg-info">Processing</span>
+                                    {% elif order.status == 'shipped' %}
+                                        <span class="badge bg-primary">Shipped</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ order.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Payment Method:</div>
+                                <div class="col-md-8">Credit Card</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Shipping Address:</div>
+                                <div class="col-md-8">{{ order.shipping_address }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Order Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in order.items %}
+                                            <tr>
+                                                <td>{{ item.product.name }}</td>
+                                                <td>${{ item.price }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td class="text-end">${{ item.price * item.quantity }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                            <td class="text-end">${{ order.total_amount }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Shipping:</td>
+                                            <td class="text-end">{% if order.total_amount >= 100 %}Free{% else %}$10.00{% endif %}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Total:</td>
+                                            <td class="text-end fw-bold">${{ order.total_amount if order.total_amount >= 100 else order.total_amount + 10 }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">What Happens Next?</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6>Order Received</h6>
+                                    <p class="mb-0">We've received your order and are processing it.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6>Order Processing</h6>
+                                    <p class="mb-0">Your order is being prepared for shipping.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-shipping-fast"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6>Order Shipped</h6>
+                                    <p class="mb-0">Your order has been shipped. You'll receive a tracking number via email.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-home"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6>Order Delivered</h6>
+                                    <p class="mb-0">Your order has been delivered to your address.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('profile') }}#orders" class="btn btn-primary me-2">
+                            <i class="fas fa-list me-2"></i> View All Orders
+                        </a>
+                        <a href="{{ url_for('shop') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-shopping-bag me-2"></i> Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

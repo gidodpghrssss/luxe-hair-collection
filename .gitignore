@@ -47,3 +47,16 @@ instance/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Local development
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Render specific
+.render-buildpacks

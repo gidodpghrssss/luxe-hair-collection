@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Virtual Try-On - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Virtual Try-On Experience</h1>
+    <p class="lead">See how our premium hair products look on you before you buy!</p>
+    
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <div id="virtual-try-on" class="try-on-container">
+                        <div class="mb-4 text-center">
+                            <div id="image-preview-container" class="try-on-preview d-flex justify-content-center align-items-center bg-light d-none" style="height: 400px;">
+                                <img id="user-image-preview" class="img-fluid" alt="Your photo">
+                            </div>
+                            <div id="upload-placeholder" class="try-on-preview d-flex justify-content-center align-items-center bg-light" style="height: 400px;">
+                                <div>
+                                    <i class="fas fa-camera fa-4x mb-3 text-muted"></i>
+                                    <p>Upload your photo to begin</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="error-message" class="alert alert-danger d-none"></div>
+                        
+                        <form id="try-on-form" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label for="user-image" class="form-label">Upload Your Photo</label>
+                                <input class="form-control" type="file" id="user-image" accept="image/*" required>
+                                <div class="form-text">For best results, use a front-facing photo with good lighting.</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label" for="hair-style-select">Select Hair Product</label>
+                                <select class="form-select" id="hair-style-select" required>
+                                    <option value="">Choose a hairstyle...</option>
+                                    {% for product in products %}
+                                        {% if product.category in ['Wigs', 'Extensions'] %}
+                                            <option value="{{ product.id }}">{{ product.name }} - ${{ product.price }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Choose Additional Preferences (Optional)</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="color-select" class="form-label">Hair Color</label>
+                                        <select class="form-select" id="color-select">
+                                            <option value="natural-black">Natural Black</option>
+                                            <option value="jet-black">Jet Black</option>
+                                            <option value="dark-brown">Dark Brown</option>
+                                            <option value="medium-brown">Medium Brown</option>
+                                            <option value="light-brown">Light Brown</option>
+                                            <option value="honey-blonde">Honey Blonde</option>
+                                            <option value="platinum-blonde">Platinum Blonde</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="texture-select" class="form-label">Texture</label>
+                                        <select class="form-select" id="texture-select">
+                                            <option value="straight">Straight</option>
+                                            <option value="body-wave">Body Wave</option>
+                                            <option value="deep-wave">Deep Wave</option>
+                                            <option value="curly">Curly</option>
+                                            <option value="kinky-curly">Kinky Curly</option>
+                                            <option value="water-wave">Water Wave</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button id="try-on-button" type="button" class="btn btn-primary btn-lg">Try On This Hairstyle</button>
+                            </div>
+                        </form>
+                        
+                        <div id="loading-indicator" class="text-center my-4 d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Processing your image with AI. This may take a moment...</p>
+                        </div>
+                        
+                        <div id="result-container" class="mt-5 d-none">
+                            <h3 class="text-center mb-4">Your Virtual Try-On Result</h3>
+                            <div class="text-center">
+                                <img id="result-image" class="img-fluid border rounded shadow" alt="Virtual try-on result">
+                            </div>
+                            <div class="d-flex justify-content-center gap-3 mt-4">
+                                <button id="try-again-button" class="btn btn-outline-secondary">Try Another Style</button>
+                                <button id="add-to-cart-button" class="btn btn-success">Add To Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h5 class="mb-0">How It Works</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-upload fa-2x text-primary"></i>
+                            </div>
+                            <h5>1. Upload Your Photo</h5>
+                            <p class="text-muted">Upload a clear front-facing photo with good lighting.</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-magic fa-2x text-primary"></i>
+                            </div>
+                            <h5>2. Select a Hairstyle</h5>
+                            <p class="text-muted">Choose from our premium collection of wigs and extensions.</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle fa-2x text-primary"></i>
+                            </div>
+                            <h5>3. See the Results</h5>
+                            <p class="text-muted">Our AI technology will show you how the hairstyle looks on you.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/virtual-try-on.js') }}"></script>
+{% endblock %}

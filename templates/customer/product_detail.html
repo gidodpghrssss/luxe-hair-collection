@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('shop') }}">Shop</a></li>
+            {% if product.category %}
+                <li class="breadcrumb-item"><a href="{{ url_for('shop', category=product.category) }}">{{ product.category }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0">
+                {% if product.image_url %}
+                    <img src="{{ product.image_url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                {% else %}
+                    <img src="/static/images/product-placeholder.jpg" class="img-fluid rounded" alt="{{ product.name }}">
+                {% endif %}
+            </div>
+            <div class="row mt-3">
+                <div class="col-3">
+                    <img src="{{ product.image_url or '/static/images/product-placeholder.jpg' }}" class="img-thumbnail" alt="{{ product.name }}">
+                </div>
+                <div class="col-3">
+                    <img src="/static/images/product-alt-1.jpg" class="img-thumbnail" alt="{{ product.name }} - Alternative View">
+                </div>
+                <div class="col-3">
+                    <img src="/static/images/product-alt-2.jpg" class="img-thumbnail" alt="{{ product.name }} - Alternative View">
+                </div>
+                <div class="col-3">
+                    <img src="/static/images/product-alt-3.jpg" class="img-thumbnail" alt="{{ product.name }} - Alternative View">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <h1 class="mb-3">{{ product.name }}</h1>
+            
+            <div class="mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star-half-alt text-warning"></i>
+                    </div>
+                    <span>(4.5/5 based on 24 reviews)</span>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {% if product.sale_price %}
+                    <h3 class="text-danger mb-0">${{ product.sale_price }}</h3>
+                    <p class="text-decoration-line-through text-muted">${{ product.price }}</p>
+                    <span class="badge bg-danger">Sale</span>
+                {% else %}
+                    <h3>${{ product.price }}</h3>
+                    {% if 'new' in product.tags %}
+                        <span class="badge bg-success">New</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <div class="mb-4">
+                <p>{{ product.description|safe }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Features:</h5>
+                <ul>
+                    <li>100% Real Human Hair</li>
+                    <li>Premium Quality</li>
+                    <li>Tangle-Free</li>
+                    <li>Can be Dyed and Styled</li>
+                    <li>Long-Lasting</li>
+                </ul>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Available Options:</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label">Length:</label>
+                    <div class="btn-group" role="group" aria-label="Length options">
+                        <input type="radio" class="btn-check" name="length" id="length1" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="length1">12"</label>
+                        
+                        <input type="radio" class="btn-check" name="length" id="length2" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="length2">16"</label>
+                        
+                        <input type="radio" class="btn-check" name="length" id="length3" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="length3">20"</label>
+                        
+                        <input type="radio" class="btn-check" name="length" id="length4" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="length4">24"</label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Color:</label>
+                    <div class="btn-group" role="group" aria-label="Color options">
+                        <input type="radio" class="btn-check" name="color" id="color1" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="color1">Natural Black</label>
+                        
+                        <input type="radio" class="btn-check" name="color" id="color2" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="color2">Dark Brown</label>
+                        
+                        <input type="radio" class="btn-check" name="color" id="color3" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="color3">Light Brown</label>
+                        
+                        <input type="radio" class="btn-check" name="color" id="color4" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="color4">Blonde</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <form action="{{ url_for('add_to_cart') }}" method="post">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="quantity" class="form-label">Quantity:</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}">
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="mb-4">
+                <p class="mb-1">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <span class="fw-bold">In Stock:</span> {{ product.stock }} items available
+                </p>
+                <p class="mb-1">
+                    <i class="fas fa-truck me-2"></i>
+                    <span class="fw-bold">Shipping:</span> Free shipping on orders over $100
+                </p>
+                <p class="mb-1">
+                    <i class="fas fa-undo me-2"></i>
+                    <span class="fw-bold">Returns:</span> 30-day money-back guarantee
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Share:</h5>
+                <div class="social-share">
+                    <a href="#" class="me-2"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-pinterest"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <a href="{{ url_for('virtual_try_on') }}?product_id={{ product.id }}" class="btn btn-outline-primary">
+                    <i class="fas fa-camera me-2"></i> Virtual Try-On
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Tabs -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="specifications-tab" data-bs-toggle="tab" data-bs-target="#specifications" type="button" role="tab" aria-controls="specifications" aria-selected="false">Specifications</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="care-tab" data-bs-toggle="tab" data-bs-target="#care" type="button" role="tab" aria-controls="care" aria-selected="false">Care Instructions</button>
+                </li>
+            </ul>
+            <div class="tab-content p-4 border border-top-0 rounded-bottom" id="productTabsContent">
+                <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                    <h4>Product Description</h4>
+                    <p>{{ product.description|safe }}</p>
+                    <p>Our premium quality hair is sourced ethically and processed using the latest techniques to ensure the highest quality. Each strand is carefully selected to provide a natural look and feel, making it indistinguishable from your own hair.</p>
+                    <p>Whether you're looking for added volume, length, or a complete transformation, our hair products are designed to meet your needs and exceed your expectations.</p>
+                </div>
+                <div class="tab-pane fade" id="specifications" role="tabpanel" aria-labelledby="specifications-tab">
+                    <h4>Product Specifications</h4>
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Material</th>
+                                <td>100% Real Human Hair</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Origin</th>
+                                <td>Ethically sourced from various regions</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Weight</th>
+                                <td>100g per bundle</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Available Lengths</th>
+                                <td>12", 16", 20", 24"</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Available Colors</th>
+                                <td>Natural Black, Dark Brown, Light Brown, Blonde</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Texture</th>
+                                <td>Straight, Wavy, Curly</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Can be Dyed</th>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Can be Heat Styled</th>
+                                <td>Yes (up to 180°C/356°F)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                    <h4>Customer Reviews</h4>
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="me-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star-half-alt text-warning"></i>
+                            </div>
+                            <span class="fw-bold">4.5 out of 5</span>
+                        </div>
+                        <p>Based on 24 reviews</p>
+                    </div>
+                    
+                    <div class="review-list">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <span>JD</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">Jennifer D.</h6>
+                                            <small class="text-muted">Posted 2 weeks ago</small>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                    </div>
+                                </div>
+                                <h5>Absolutely Amazing!</h5>
+                                <p>I've tried many hair extensions before, but these are by far the best quality I've ever purchased. They blend perfectly with my natural hair and feel incredibly soft. Worth every penny!</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <span>SM</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">Sarah M.</h6>
+                                            <small class="text-muted">Posted 1 month ago</small>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="far fa-star text-warning"></i>
+                                    </div>
+                                </div>
+                                <h5>Great Quality</h5>
+                                <p>The hair quality is excellent and looks very natural. The only reason I'm giving 4 stars instead of 5 is because the color was slightly different from what I expected. Otherwise, I'm very happy with my purchase.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <span>RL</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">Rebecca L.</h6>
+                                            <small class="text-muted">Posted 2 months ago</small>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                    </div>
+                                </div>
+                                <h5>Exceeded My Expectations</h5>
+                                <p>I was hesitant to purchase hair online, but I'm so glad I did! The quality is outstanding, and it looks completely natural. I've received so many compliments. Will definitely purchase again!</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if current_user.is_authenticated %}
+                        <div class="mt-4">
+                            <h5>Write a Review</h5>
+                            <form>
+                                <div class="mb-3">
+                                    <label for="rating" class="form-label">Rating</label>
+                                    <div>
+                                        <div class="rating">
+                                            <i class="far fa-star text-warning rating-star" data-rating="1"></i>
+                                            <i class="far fa-star text-warning rating-star" data-rating="2"></i>
+                                            <i class="far fa-star text-warning rating-star" data-rating="3"></i>
+                                            <i class="far fa-star text-warning rating-star" data-rating="4"></i>
+                                            <i class="far fa-star text-warning rating-star" data-rating="5"></i>
+                                        </div>
+                                        <input type="hidden" id="rating" name="rating" value="0">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reviewTitle" class="form-label">Review Title</label>
+                                    <input type="text" class="form-control" id="reviewTitle" name="title">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reviewContent" class="form-label">Review</label>
+                                    <textarea class="form-control" id="reviewContent" name="content" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mt-4">
+                            Please <a href="{{ url_for('login') }}">login</a> to write a review.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="tab-pane fade" id="care" role="tabpanel" aria-labelledby="care-tab">
+                    <h4>Care Instructions</h4>
+                    <p>To ensure your Luxe Hair Collection products maintain their quality and longevity, please follow these care instructions:</p>
+                    
+                    <h5>Washing</h5>
+                    <ul>
+                        <li>Wash your hair extensions every 15-20 wears or when product buildup is visible.</li>
+                        <li>Use sulfate-free, gentle shampoo and conditioner.</li>
+                        <li>Wash in lukewarm water (never hot) in a downward motion.</li>
+                        <li>Do not scrub or twist the hair.</li>
+                        <li>Rinse thoroughly to remove all product.</li>
+                    </ul>
+                    
+                    <h5>Conditioning</h5>
+                    <ul>
+                        <li>Apply conditioner from mid-length to ends, avoiding the roots or attachment areas.</li>
+                        <li>Use a deep conditioning treatment once a month.</li>
+                        <li>Leave-in conditioners can help maintain moisture between washes.</li>
+                    </ul>
+                    
+                    <h5>Drying</h5>
+                    <ul>
+                        <li>Gently squeeze out excess water with a towel. Do not rub or twist.</li>
+                        <li>Air dry whenever possible.</li>
+                        <li>If using a blow dryer, use low heat and a heat protectant spray.</li>
+                    </ul>
+                    
+                    <h5>Styling</h5>
+                    <ul>
+                        <li>Always use heat protectant before using hot tools.</li>
+                        <li>Keep styling temperatures below 180°C (356°F).</li>
+                        <li>Avoid applying heat to the same section repeatedly.</li>
+                        <li>Use ceramic or tourmaline styling tools for even heat distribution.</li>
+                    </ul>
+                    
+                    <h5>Storage</h5>
+                    <ul>
+                        <li>Store your hair extensions in a cool, dry place.</li>
+                        <li>Brush gently before storage to remove tangles.</li>
+                        <li>For clip-in extensions, store them in the original packaging or a silk/satin bag.</li>
+                        <li>For wigs, use a wig stand to maintain shape.</li>
+                    </ul>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Avoid swimming in chlorinated pools or salt water while wearing extensions, as these can damage the hair.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Products -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">You May Also Like</h3>
+        </div>
+        
+        {% for product in related_products %}
+            <div class="col-md-3 mb-4">
+                <div class="card product-card h-100">
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% else %}
+                        <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="{{ product.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            {% if product.sale_price %}
+                                <p class="card-text mb-0">
+                                    <span class="text-decoration-line-through text-muted">${{ product.price }}</span>
+                                    <span class="text-danger fw-bold">${{ product.sale_price }}</span>
+                                </p>
+                                <span class="badge bg-danger">Sale</span>
+                            {% else %}
+                                <p class="card-text mb-0">${{ product.price }}</p>
+                                {% if 'new' in product.tags %}
+                                    <span class="badge bg-success">New</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Rating system for reviews
+        const ratingStars = document.querySelectorAll('.rating-star');
+        const ratingInput = document.getElementById('rating');
+        
+        ratingStars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = this.getAttribute('data-rating');
+                ratingInput.value = rating;
+                
+                // Update stars display
+                ratingStars.forEach(s => {
+                    const sRating = s.getAttribute('data-rating');
+                    if (sRating <= rating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas');
+                    } else {
+                        s.classList.remove('fas');
+                        s.classList.add('far');
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseover', function() {
+                const rating = this.getAttribute('data-rating');
+                
+                // Temporarily update stars display on hover
+                ratingStars.forEach(s => {
+                    const sRating = s.getAttribute('data-rating');
+                    if (sRating <= rating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas');
+                    } else {
+                        s.classList.remove('fas');
+                        s.classList.add('far');
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseout', function() {
+                const currentRating = ratingInput.value;
+                
+                // Reset stars display based on actual rating
+                ratingStars.forEach(s => {
+                    const sRating = s.getAttribute('data-rating');
+                    if (sRating <= currentRating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas');
+                    } else {
+                        s.classList.remove('fas');
+                        s.classList.add('far');
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

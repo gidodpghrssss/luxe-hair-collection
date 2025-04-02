@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Shopping Cart</h1>
+    
+    {% if cart_items %}
+        <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cart Items ({{ cart_items|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for item in cart_items %}
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-md-2">
+                                    {% if item.image_url %}
+                                        <img src="{{ item.image_url }}" class="img-fluid rounded" alt="{{ item.name }}">
+                                    {% else %}
+                                        <img src="/static/images/product-placeholder.jpg" class="img-fluid rounded" alt="{{ item.name }}">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="mb-1">{{ item.name }}</h5>
+                                    <p class="text-muted small mb-0">Price: ${{ item.price }}</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="input-group">
+                                        <button class="btn btn-outline-secondary quantity-btn" type="button" data-action="decrease" data-product-id="{{ item.id }}">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" class="form-control text-center quantity-input" value="{{ item.quantity }}" min="1" data-product-id="{{ item.id }}">
+                                        <button class="btn btn-outline-secondary quantity-btn" type="button" data-action="increase" data-product-id="{{ item.id }}">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <p class="fw-bold mb-0">${{ item.subtotal }}</p>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <button class="btn btn-sm btn-outline-danger remove-item" data-product-id="{{ item.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% if not loop.last %}
+                                <hr>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('shop') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i> Continue Shopping
+                    </a>
+                    <button id="updateCart" class="btn btn-primary">
+                        <i class="fas fa-sync-alt me-2"></i> Update Cart
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal</span>
+                            <span>${{ cart_total }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Shipping</span>
+                            <span>{% if cart_total >= 100 %}Free{% else %}$10.00{% endif %}</span>
+                        </div>
+                        {% if cart_total < 100 %}
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Add ${{ 100 - cart_total }} more to qualify for free shipping!
+                            </div>
+                        {% endif %}
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3 fw-bold">
+                            <span>Total</span>
+                            <span>${{ cart_total if cart_total >= 100 else cart_total + 10 }}</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="couponCode" class="form-label">Coupon Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="couponCode" placeholder="Enter code">
+                                <button class="btn btn-outline-primary" type="button">Apply</button>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-lg">
+                                Proceed to Checkout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Secure Checkout</h5>
+                        <p class="card-text small">We accept the following payment methods:</p>
+                        <div class="d-flex justify-content-between">
+                            <i class="fab fa-cc-visa fa-2x text-primary"></i>
+                            <i class="fab fa-cc-mastercard fa-2x text-danger"></i>
+                            <i class="fab fa-cc-amex fa-2x text-info"></i>
+                            <i class="fab fa-cc-paypal fa-2x text-primary"></i>
+                            <i class="fab fa-cc-apple-pay fa-2x text-dark"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shopping-cart fa-5x text-muted"></i>
+            </div>
+            <h3>Your cart is empty</h3>
+            <p class="mb-4">Looks like you haven't added any items to your cart yet.</p>
+            <a href="{{ url_for('shop') }}" class="btn btn-primary btn-lg">
+                Start Shopping
+            </a>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="text-center mb-4">You might be interested in</h3>
+            </div>
+            <!-- Placeholder for recommended products -->
+            <div class="col-md-3 mb-4">
+                <div class="card product-card h-100">
+                    <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="Product">
+                    <div class="card-body">
+                        <h5 class="card-title">Brazilian Straight Hair</h5>
+                        <p class="card-text mb-2">$149.99</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card product-card h-100">
+                    <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="Product">
+                    <div class="card-body">
+                        <h5 class="card-title">Peruvian Body Wave</h5>
+                        <p class="card-text mb-2">$159.99</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card product-card h-100">
+                    <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="Product">
+                    <div class="card-body">
+                        <h5 class="card-title">Malaysian Curly Hair</h5>
+                        <p class="card-text mb-2">$169.99</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card product-card h-100">
+                    <img src="/static/images/product-placeholder.jpg" class="card-img-top" alt="Product">
+                    <div class="card-body">
+                        <h5 class="card-title">Indian Straight Hair</h5>
+                        <p class="card-text mb-2">$139.99</p>
+                        <a href="#" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Quantity buttons
+        const quantityBtns = document.querySelectorAll('.quantity-btn');
+        const quantityInputs = document.querySelectorAll('.quantity-input');
+        const removeItemBtns = document.querySelectorAll('.remove-item');
+        const updateCartBtn = document.getElementById('updateCart');
+        
+        // Increase/decrease quantity
+        quantityBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                const productId = this.getAttribute('data-product-id');
+                const input = document.querySelector(`.quantity-input[data-product-id="${productId}"]`);
+                let value = parseInt(input.value);
+                
+                if (action === 'increase') {
+                    value++;
+                } else if (action === 'decrease' && value > 1) {
+                    value--;
+                }
+                
+                input.value = value;
+            });
+        });
+        
+        // Update quantity on input change
+        quantityInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                let value = parseInt(this.value);
+                
+                // Ensure minimum quantity is 1
+                if (value < 1 || isNaN(value)) {
+                    this.value = 1;
+                }
+            });
+        });
+        
+        // Remove item
+        removeItemBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                
+                // Set quantity to 0 and update cart
+                updateCartItem(productId, 0);
+            });
+        });
+        
+        // Update cart
+        updateCartBtn.addEventListener('click', function() {
+            quantityInputs.forEach(input => {
+                const productId = input.getAttribute('data-product-id');
+                const quantity = parseInt(input.value);
+                
+                updateCartItem(productId, quantity);
+            });
+        });
+        
+        // Function to update cart item
+        function updateCartItem(productId, quantity) {
+            fetch('{{ url_for("update_cart") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `product_id=${productId}&quantity=${quantity}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload page to reflect changes
+                    window.location.reload();
+                } else {
+                    alert('Error updating cart: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the cart.');
+            });
+        }
+    });
+</script>
+{% endblock %}

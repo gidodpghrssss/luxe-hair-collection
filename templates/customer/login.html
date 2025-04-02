@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Luxe Hair Collection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0">Login to Your Account</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ url_for('login') }}">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="#" class="text-decoration-none">Forgot your password?</a>
+                    </div>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}" class="text-decoration-none">Register now</a></p>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Login with Social Media</h5>
+                    <div class="d-flex justify-content-center gap-3 mt-3">
+                        <button class="btn btn-outline-primary">
+                            <i class="fab fa-facebook-f me-2"></i> Facebook
+                        </button>
+                        <button class="btn btn-outline-danger">
+                            <i class="fab fa-google me-2"></i> Google
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

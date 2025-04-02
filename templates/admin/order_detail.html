@@ -1,0 +1,553 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Order #{{ order.id }} Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Order #{{ order.id }}</h1>
+        <div>
+            <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Back to Orders
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('admin_print_order', order_id=order.id) }}" target="_blank"><i class="fas fa-print me-2"></i> Print Order</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('admin_print_invoice', order_id=order.id) }}" target="_blank"><i class="fas fa-file-invoice me-2"></i> Print Invoice</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('admin_print_shipping_label', order_id=order.id) }}" target="_blank"><i class="fas fa-shipping-fast me-2"></i> Print Shipping Label</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#emailCustomerModal"><i class="fas fa-envelope me-2"></i> Email Customer</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Status -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            {% if order.status == 'pending' %}
+                                <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-clock text-white fa-lg"></i>
+                                </div>
+                            {% elif order.status == 'processing' %}
+                                <div class="rounded-circle bg-info d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-cog text-white fa-lg"></i>
+                                </div>
+                            {% elif order.status == 'shipped' %}
+                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-shipping-fast text-white fa-lg"></i>
+                                </div>
+                            {% elif order.status == 'delivered' %}
+                                <div class="rounded-circle bg-success d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-check text-white fa-lg"></i>
+                                </div>
+                            {% elif order.status == 'cancelled' %}
+                                <div class="rounded-circle bg-danger d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-times text-white fa-lg"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Order Status: 
+                                {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif order.status == 'processing' %}
+                                    <span class="badge bg-info">Processing</span>
+                                {% elif order.status == 'shipped' %}
+                                    <span class="badge bg-primary">Shipped</span>
+                                {% elif order.status == 'delivered' %}
+                                    <span class="badge bg-success">Delivered</span>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted mb-0">Last Updated: {{ order.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-md-end mt-3 mt-md-0">
+                        <form method="post" action="{{ url_for('admin_update_order_status') }}" class="d-flex align-items-center">
+                            <input type="hidden" name="order_id" value="{{ order.id }}">
+                            <select class="form-select me-2" name="status" style="width: auto;">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Processing</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Update Status</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Order Details -->
+        <div class="col-lg-8">
+            <!-- Order Items -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Order Items</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ item.product.image_url or url_for('static', filename='images/product-placeholder.jpg') }}" alt="{{ item.product.name }}" class="img-thumbnail me-3" width="50">
+                                            <div>
+                                                <div>{{ item.product.name }}</div>
+                                                <small class="text-muted">SKU: {{ item.product.sku }}</small>
+                                                {% if item.variant %}
+                                                <div><small>{{ item.variant }}</small></div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${{ item.price }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td class="text-end">${{ item.price * item.quantity }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end">Subtotal:</td>
+                                    <td class="text-end">${{ order.subtotal }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end">Shipping:</td>
+                                    <td class="text-end">${{ order.shipping_cost }}</td>
+                                </tr>
+                                {% if order.discount %}
+                                <tr>
+                                    <td colspan="3" class="text-end">Discount:</td>
+                                    <td class="text-end">-${{ order.discount }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Total:</td>
+                                    <td class="text-end fw-bold">${{ order.total_amount }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Timeline -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Order Timeline</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for event in order.timeline %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker 
+                                {% if event.type == 'order_placed' %}bg-success
+                                {% elif event.type == 'status_change' %}bg-primary
+                                {% elif event.type == 'note_added' %}bg-info
+                                {% elif event.type == 'payment' %}bg-warning
+                                {% elif event.type == 'refund' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {% if event.type == 'order_placed' %}<i class="fas fa-shopping-cart"></i>
+                                {% elif event.type == 'status_change' %}<i class="fas fa-sync-alt"></i>
+                                {% elif event.type == 'note_added' %}<i class="fas fa-sticky-note"></i>
+                                {% elif event.type == 'payment' %}<i class="fas fa-credit-card"></i>
+                                {% elif event.type == 'refund' %}<i class="fas fa-undo"></i>
+                                {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">{{ event.title }}</h6>
+                                    <small class="text-muted">{{ event.timestamp.strftime('%b %d, %Y %I:%M %p') }}</small>
+                                </div>
+                                <p class="mb-0">{{ event.description }}</p>
+                                {% if event.user %}
+                                <small class="text-muted">By: {{ event.user }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Note -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Add Note</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('admin_add_order_note', order_id=order.id) }}">
+                        <div class="mb-3">
+                            <textarea class="form-control" name="note" rows="3" placeholder="Add a note about this order..." required></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="notifyCustomer" name="notify_customer">
+                            <label class="form-check-label" for="notifyCustomer">
+                                Notify customer about this note
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Note</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer and Shipping Info -->
+        <div class="col-lg-4">
+            <!-- Order Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Order Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Order ID:</div>
+                            <div class="col-7">{{ order.id }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Order Date:</div>
+                            <div class="col-7">{{ order.order_date.strftime('%B %d, %Y') }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Order Time:</div>
+                            <div class="col-7">{{ order.order_date.strftime('%I:%M %p') }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Payment Method:</div>
+                            <div class="col-7">{{ order.payment_method }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Payment Status:</div>
+                            <div class="col-7">
+                                {% if order.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% elif order.payment_status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif order.payment_status == 'failed' %}
+                                    <span class="badge bg-danger">Failed</span>
+                                {% elif order.payment_status == 'refunded' %}
+                                    <span class="badge bg-info">Refunded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if order.tracking_number %}
+                        <div class="row mb-2">
+                            <div class="col-5 fw-bold">Tracking Number:</div>
+                            <div class="col-7">{{ order.tracking_number }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if order.payment_status != 'paid' %}
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#markAsPaidModal">
+                            <i class="fas fa-check-circle me-1"></i> Mark as Paid
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Customer Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Customer Information</h6>
+                    <a href="{{ url_for('admin_edit_user', user_id=order.user.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="{{ url_for('static', filename='images/user-avatar.jpg') }}" alt="Customer" class="rounded-circle me-3" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0">{{ order.user.name }}</h6>
+                                <p class="text-muted mb-0">Customer since {{ order.user.created_at.strftime('%b %Y') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-4 fw-bold">Email:</div>
+                            <div class="col-8">{{ order.user.email }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 fw-bold">Phone:</div>
+                            <div class="col-8">{{ order.user.phone or 'Not provided' }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 fw-bold">Orders:</div>
+                            <div class="col-8">{{ order.user.orders|length }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 fw-bold">Total Spent:</div>
+                            <div class="col-8">${{ order.user.total_spent }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_user_detail', user_id=order.user.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user me-1"></i> View Customer
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#emailCustomerModal">
+                            <i class="fas fa-envelope me-1"></i> Email Customer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shipping Address -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Shipping Address</h6>
+                </div>
+                <div class="card-body">
+                    <address>
+                        {{ order.shipping_address.name }}<br>
+                        {{ order.shipping_address.street }}<br>
+                        {% if order.shipping_address.apartment %}
+                            {{ order.shipping_address.apartment }}<br>
+                        {% endif %}
+                        {{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.zip }}<br>
+                        {{ order.shipping_address.country }}
+                    </address>
+                    
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editShippingAddressModal">
+                            <i class="fas fa-edit me-1"></i> Edit Address
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Billing Address -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Billing Address</h6>
+                </div>
+                <div class="card-body">
+                    {% if order.billing_address %}
+                        <address>
+                            {{ order.billing_address.name }}<br>
+                            {{ order.billing_address.street }}<br>
+                            {% if order.billing_address.apartment %}
+                                {{ order.billing_address.apartment }}<br>
+                            {% endif %}
+                            {{ order.billing_address.city }}, {{ order.billing_address.state }} {{ order.billing_address.zip }}<br>
+                            {{ order.billing_address.country }}
+                        </address>
+                    {% else %}
+                        <p class="text-muted">Same as shipping address</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Customer Modal -->
+<div class="modal fade" id="emailCustomerModal" tabindex="-1" aria-labelledby="emailCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailCustomerModalLabel">Email Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('admin_email_customer', order_id=order.id) }}">
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" name="subject" value="Your Order #{{ order.id }} from Luxe Hair Collection" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="emailMessage" name="message" rows="6" required></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="includeOrderDetails" name="include_order_details" checked>
+                        <label class="form-check-label" for="includeOrderDetails">
+                            Include order details
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Send Email</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div class="modal fade" id="markAsPaidModal" tabindex="-1" aria-labelledby="markAsPaidModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="markAsPaidModalLabel">Mark Order as Paid</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('admin_mark_order_paid', order_id=order.id) }}">
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">Payment Method</label>
+                        <select class="form-select" id="paymentMethod" name="payment_method" required>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cash">Cash</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionId" class="form-label">Transaction ID (Optional)</label>
+                        <input type="text" class="form-control" id="transactionId" name="transaction_id">
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentNote" class="form-label">Payment Note (Optional)</label>
+                        <textarea class="form-control" id="paymentNote" name="payment_note" rows="3"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="notifyCustomerPayment" name="notify_customer" checked>
+                        <label class="form-check-label" for="notifyCustomerPayment">
+                            Send payment confirmation to customer
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Mark as Paid</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Shipping Address Modal -->
+<div class="modal fade" id="editShippingAddressModal" tabindex="-1" aria-labelledby="editShippingAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShippingAddressModalLabel">Edit Shipping Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('admin_update_shipping_address', order_id=order.id) }}">
+                    <div class="mb-3">
+                        <label for="shippingName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="shippingName" name="name" value="{{ order.shipping_address.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shippingStreet" class="form-label">Street Address</label>
+                        <input type="text" class="form-control" id="shippingStreet" name="street" value="{{ order.shipping_address.street }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shippingApartment" class="form-label">Apartment, Suite, etc. (Optional)</label>
+                        <input type="text" class="form-control" id="shippingApartment" name="apartment" value="{{ order.shipping_address.apartment or '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="shippingCity" class="form-label">City</label>
+                            <input type="text" class="form-control" id="shippingCity" name="city" value="{{ order.shipping_address.city }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="shippingState" class="form-label">State/Province</label>
+                            <input type="text" class="form-control" id="shippingState" name="state" value="{{ order.shipping_address.state }}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="shippingZip" class="form-label">Zip/Postal Code</label>
+                            <input type="text" class="form-control" id="shippingZip" name="zip" value="{{ order.shipping_address.zip }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="shippingCountry" class="form-label">Country</label>
+                            <select class="form-select" id="shippingCountry" name="country" required>
+                                <option value="US" {% if order.shipping_address.country == 'US' %}selected{% endif %}>United States</option>
+                                <option value="CA" {% if order.shipping_address.country == 'CA' %}selected{% endif %}>Canada</option>
+                                <option value="MX" {% if order.shipping_address.country == 'MX' %}selected{% endif %}>Mexico</option>
+                                <option value="UK" {% if order.shipping_address.country == 'UK' %}selected{% endif %}>United Kingdom</option>
+                                <!-- Add more countries as needed -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="updateBillingAddress" name="update_billing_address" {% if not order.billing_address %}checked{% endif %}>
+                        <label class="form-check-label" for="updateBillingAddress">
+                            Also update billing address
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Update Address</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 15px;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+    }
+    
+    .timeline-content {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
