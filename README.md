@@ -23,7 +23,8 @@ A modern e-commerce platform for high-quality hair products including wigs, exte
 ## Technology Stack
 - Frontend: React.js, Next.js
 - Backend: Node.js, Express
-- Database: MongoDB
+- Database: PostgreSQL (via Render)
+- ORM: Prisma
 - AI: Nebius API for LLM integration
 - Deployment: Render
 - E-commerce: Shopify API integration
@@ -59,7 +60,7 @@ The admin dashboard includes a Nebius-powered AI assistant that:
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
-- MongoDB
+- PostgreSQL (for local development)
 - Shopify Partner account
 - Nebius API key
 
@@ -73,8 +74,8 @@ The admin dashboard includes a Nebius-powered AI assistant that:
 To use the AI features, you'll need to:
 1. Sign up for a Nebius account at [nebius.com](https://nebius.com)
 2. Create an API key in your Nebius dashboard
-3. Add the API key to your `.env` file as `NEBIUS_API_KEY`
-4. Add the API URL to your `.env` file as `NEBIUS_API_URL` (default: https://api.studio.nebius.com/v1/)
+3. Add the API key to your `.env` file as `NEXT_PUBLIC_NEBIUS_API_KEY`
+4. Add the API URL to your `.env` file as `NEXT_PUBLIC_NEBIUS_API_URL` (default: https://api.studio.nebius.com/v1/)
 
 ### Model Configuration
 The chatbot is configured to use the Meta Llama 3.1 70B Instruct model through the Nebius API with the following optimized parameters:
@@ -108,7 +109,6 @@ This application is configured for deployment on Render. See the `render.yaml` f
 3. Render will automatically detect the `render.yaml` file and create the necessary services
 4. Set up the following environment variables in the Render dashboard:
    - `NEXT_PUBLIC_NEBIUS_API_KEY`: Your Nebius API key
-   - `MONGODB_URI`: Your MongoDB connection string
    - `SHOPIFY_API_KEY`: Your Shopify API key
    - `SHOPIFY_API_SECRET`: Your Shopify API secret
 5. Deploy your application
@@ -118,6 +118,14 @@ The deployment will automatically:
 - Build the application
 - Start the server
 - Set up health checks for monitoring
+- Create and configure a PostgreSQL database
+
+### Database Setup
+The application uses PostgreSQL via Render's managed database service:
+- A PostgreSQL database is automatically provisioned when you deploy
+- The connection string is automatically injected into your application
+- Prisma handles database migrations and schema management
+- No manual database setup is required
 
 ### TypeScript Configuration
 When deploying to Render, all TypeScript errors will be addressed during the build process as the necessary type definitions will be installed automatically:
