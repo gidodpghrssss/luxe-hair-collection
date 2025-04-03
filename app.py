@@ -7,7 +7,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-import shopify
+# Handle Shopify import with try/except
+try:
+    from ShopifyAPI import shopify
+except ImportError:
+    try:
+        import shopify
+    except ImportError:
+        print("Warning: Shopify API could not be imported. Some features may not work.")
+        shopify = None
+
 from llama_index.llms.nebius import NebiusLLM
 from llama_index.embeddings.nebius import NebiusEmbedding
 from llama_index.core.node_parser import SimpleNodeParser
@@ -61,34 +70,66 @@ nebius_api_url = os.getenv('NEBIUS_API_URL', 'https://api.nebius.ai/v1')
 nebius_chat_model = os.getenv('NEBIUS_CHAT_MODEL', 'llama-3-8b-instruct')
 nebius_embeddings_model = os.getenv('NEBIUS_EMBEDDINGS_MODEL', 'text-embedding-3-small')
 
-# Initialize Llama Index with Nebius
-llm = NebiusLLM(
-    api_key=nebius_api_key,
-    model=nebius_chat_model
-)
+# Initialize Llama Index with Nebius only if API key is available
+llm = None
+embedding_model = None
+service_context = None
 
-embedding_model = NebiusEmbedding(
-    api_key=nebius_api_key,
-    model=nebius_embeddings_model
-)
-
-service_context = ServiceContext.from_defaults(
-    llm=llm,
-    embed_model=embedding_model
-)
+if nebius_api_key:
+    try:
+        llm = NebiusLLM(
+            api_key=nebius_api_key,
+            model=nebius_chat_model
+        )
+        
+        embedding_model = NebiusEmbedding(
+            api_key=nebius_api_key,
+            model=nebius_embeddings_model
+        )
+        
+        service_context = ServiceContext.from_defaults(
+            llm=llm,
+            embed_model=embedding_model
+        )
+        print("Nebius API initialized successfully")
+    except Exception as e:
+        print(f"Error initializing Nebius API: {e}")
+else:
+    print("Warning: Nebius API key not provided. AI features will not be available.")
 
 # Initialize VirtualTryOn, AdminAgent, and CustomerChatbot
-try:
-    virtual_try_on = VirtualTryOn()
-    admin_agent = AdminAgent()
-    chatbot = CustomerChatbot()
-    print("AI components initialized successfully")
-except Exception as e:
-    print(f"Error initializing AI components: {e}")
-    # Fallback to simpler implementation if AI components fail to initialize
-    virtual_try_on = None
-    admin_agent = None
-    chatbot = None
+virtual_try_on = None
+admin_agent = None
+chatbot = None
+
+if nebius_api_key and service_context:
+    try:
+        print("Initializing AI components...")
+        if os.getenv('ENABLE_VIRTUAL_TRY_ON', 'true').lower() == 'true':
+            try:
+                virtual_try_on = VirtualTryOn()
+                print("✅ Virtual Try-On initialized successfully")
+            except Exception as e:
+                print(f"❌ Error initializing Virtual Try-On: {e}")
+        
+        if os.getenv('ENABLE_ADMIN_AGENT', 'true').lower() == 'true':
+            try:
+                admin_agent = AdminAgent()
+                print("✅ Admin Agent initialized successfully")
+            except Exception as e:
+                print(f"❌ Error initializing Admin Agent: {e}")
+        
+        if os.getenv('ENABLE_CHATBOT', 'true').lower() == 'true':
+            try:
+                chatbot = CustomerChatbot()
+                print("✅ Customer Chatbot initialized successfully")
+            except Exception as e:
+                print(f"❌ Error initializing Customer Chatbot: {e}")
+        
+    except Exception as e:
+        print(f"Error during AI components initialization: {e}")
+else:
+    print("AI components initialization skipped: Nebius API key or service context not available")
 
 # Database Models
 class User(db.Model, UserMixin):

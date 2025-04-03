@@ -46,11 +46,14 @@ class AdminAgent:
     
     def _setup_knowledge_base(self):
         """Set up the agent's knowledge base using LlamaIndex"""
-        # Check if we have a persisted index
-        storage_dir = "./storage"
-        if os.path.exists(storage_dir):
+        # In production (like Render), we won't be able to persist storage between deploys
+        # So we'll create the knowledge base each time
+        is_production = os.getenv('FLASK_ENV') == 'production'
+        storage_dir = os.path.join(os.getcwd(), "storage")
+        
+        if not is_production and os.path.exists(storage_dir):
             try:
-                # Load existing index
+                # Load existing index in development
                 storage_context = StorageContext.from_defaults(persist_dir=storage_dir)
                 self.index = load_index_from_storage(storage_context, service_context=self.service_context)
                 print("Loaded existing knowledge base")
@@ -76,10 +79,13 @@ class AdminAgent:
         # Create index
         self.index = VectorStoreIndex(nodes, service_context=self.service_context)
         
-        # Save index
-        os.makedirs(storage_dir, exist_ok=True)
-        self.index.storage_context.persist(persist_dir=storage_dir)
-        print("Created and saved new knowledge base")
+        # Save index in development environment only
+        if os.getenv('FLASK_ENV') != 'production':
+            os.makedirs(storage_dir, exist_ok=True)
+            self.index.storage_context.persist(persist_dir=storage_dir)
+            print("Created and saved new knowledge base")
+        else:
+            print("Created in-memory knowledge base (not persisted in production)")
     
     def _get_hair_product_knowledge(self) -> str:
         """Get knowledge about hair products"""
