@@ -255,7 +255,7 @@ class AdminAgent:
             
             # Get recommendations from the AI
             inventory_query = f"""
-            Analyze our current inventory:
+            Analyzing our current inventory:
             - We have {len(products)} total products
             - {len(low_stock_items)} products are low in stock (5 or fewer units)
             
@@ -319,7 +319,7 @@ class AdminAgent:
             
             # Get recommendations from the AI
             sales_query = f"""
-            Analyze our recent sales performance:
+            Analyzing our recent sales performance:
             - Total orders in the last 30 days: {len(recent_orders)}
             - Total revenue in the last 30 days: ${sum(o['total_amount'] for o in recent_orders)}
             
@@ -342,3 +342,470 @@ class AdminAgent:
         except Exception as e:
             print(f"Error analyzing sales: {e}")
             return {"error": str(e)}
+
+    # ---------- NEW WEBSITE MANAGEMENT FUNCTIONS ----------
+    
+    def manage_products(self, action: str, product_data: Optional[Dict[str, Any]] = None, product_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Manage website products (create, update, delete, get)
+        
+        Args:
+            action: The action to perform (create, update, delete, get, list)
+            product_data: Dictionary with product details (for create/update)
+            product_id: Product ID (for update/delete/get)
+        
+        Returns:
+            Dictionary with operation result and product data
+        """
+        try:
+            # Format the AI query based on the action
+            if action == "create" and product_data:
+                query = f"""
+                Create a new product with these details:
+                {json.dumps(product_data, indent=2)}
+                
+                Verify the product details are complete and valid.
+                Suggest any additional fields or modifications that would improve this product listing.
+                """
+                insights = self.query(query, {"action": "create_product", "product_data": product_data})
+                return {
+                    "success": True,
+                    "action": "create",
+                    "product_data": product_data,
+                    "insights": insights
+                }
+                
+            elif action == "update" and product_data and product_id:
+                query = f"""
+                Update product #{product_id} with these new details:
+                {json.dumps(product_data, indent=2)}
+                
+                Verify the changes are appropriate and suggest any additional updates.
+                """
+                insights = self.query(query, {"action": "update_product", "product_id": product_id, "product_data": product_data})
+                return {
+                    "success": True,
+                    "action": "update",
+                    "product_id": product_id,
+                    "product_data": product_data,
+                    "insights": insights
+                }
+                
+            elif action == "delete" and product_id:
+                query = f"""
+                Analyzing impact of deleting product #{product_id}.
+                
+                What are potential implications of removing this product?
+                Are there any alternative actions to consider?
+                """
+                insights = self.query(query, {"action": "delete_product", "product_id": product_id})
+                return {
+                    "success": True,
+                    "action": "delete",
+                    "product_id": product_id,
+                    "insights": insights
+                }
+                
+            elif action == "get" and product_id:
+                query = f"""
+                Analyzing product #{product_id}.
+                
+                What are the key selling points for this product?
+                How could we improve its marketing or presentation?
+                """
+                insights = self.query(query, {"action": "get_product", "product_id": product_id})
+                return {
+                    "success": True,
+                    "action": "get",
+                    "product_id": product_id,
+                    "insights": insights
+                }
+                
+            elif action == "list":
+                query = """
+                Analyzing our product catalog.
+                
+                What product categories need expansion?
+                Are there any gaps in our catalog?
+                What seasonal products should we consider adding?
+                """
+                insights = self.query(query, {"action": "list_products"})
+                return {
+                    "success": True,
+                    "action": "list",
+                    "insights": insights
+                }
+                
+            else:
+                return {
+                    "success": False,
+                    "error": f"Invalid action '{action}' or missing required parameters"
+                }
+                
+        except Exception as e:
+            print(f"Error in product management: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def manage_orders(self, action: str, order_data: Optional[Dict[str, Any]] = None, order_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Manage website orders (update status, get details, analyze)
+        
+        Args:
+            action: The action to perform (update, get, list, analyze)
+            order_data: Dictionary with order details (for update)
+            order_id: Order ID (for update/get)
+        
+        Returns:
+            Dictionary with operation result and order data
+        """
+        try:
+            if action == "update" and order_data and order_id:
+                query = f"""
+                Update order #{order_id} with new status: {order_data.get('status', 'unknown')}
+                
+                Is this status change appropriate based on the order history?
+                What follow-up actions should be taken after this status change?
+                """
+                insights = self.query(query, {"action": "update_order", "order_id": order_id, "order_data": order_data})
+                return {
+                    "success": True,
+                    "action": "update",
+                    "order_id": order_id,
+                    "order_data": order_data,
+                    "insights": insights
+                }
+                
+            elif action == "get" and order_id:
+                query = f"""
+                Analyzing order #{order_id}.
+                
+                What insights can we gather from this order?
+                Are there any potential upsell opportunities?
+                """
+                insights = self.query(query, {"action": "get_order", "order_id": order_id})
+                return {
+                    "success": True,
+                    "action": "get",
+                    "order_id": order_id,
+                    "insights": insights
+                }
+                
+            elif action == "list":
+                query = """
+                Analyzing our recent orders.
+                
+                What patterns do we see in customer purchasing behavior?
+                Are there any shipping or fulfillment issues we should address?
+                """
+                insights = self.query(query, {"action": "list_orders"})
+                return {
+                    "success": True,
+                    "action": "list",
+                    "insights": insights
+                }
+            
+            elif action == "analyze":
+                query = """
+                Conducting a deep analysis of our order history.
+                
+                What are our most profitable order combinations?
+                Which geographic regions generate the most orders?
+                What time periods see the highest order volume?
+                """
+                insights = self.query(query, {"action": "analyze_orders"})
+                return {
+                    "success": True,
+                    "action": "analyze",
+                    "insights": insights
+                }
+                
+            else:
+                return {
+                    "success": False,
+                    "error": f"Invalid action '{action}' or missing required parameters"
+                }
+                
+        except Exception as e:
+            print(f"Error in order management: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def manage_users(self, action: str, user_data: Optional[Dict[str, Any]] = None, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Manage website users (create, update, delete, get)
+        
+        Args:
+            action: The action to perform (create, update, delete, get, list)
+            user_data: Dictionary with user details (for create/update)
+            user_id: User ID (for update/delete/get)
+        
+        Returns:
+            Dictionary with operation result and user data
+        """
+        try:
+            if action == "create" and user_data:
+                query = f"""
+                Creating a new user with these details:
+                {json.dumps({k: v for k, v in user_data.items() if k != 'password'}, indent=2)}
+                
+                Is this user profile complete?
+                What user segment does this customer likely belong to?
+                """
+                insights = self.query(query, {"action": "create_user", "user_data": {k: v for k, v in user_data.items() if k != 'password'}})
+                return {
+                    "success": True,
+                    "action": "create",
+                    "user_data": {k: v for k, v in user_data.items() if k != 'password'},
+                    "insights": insights
+                }
+                
+            elif action == "update" and user_data and user_id:
+                query = f"""
+                Updating user #{user_id} with these new details:
+                {json.dumps({k: v for k, v in user_data.items() if k != 'password'}, indent=2)}
+                
+                What implications do these changes have for our user segmentation?
+                """
+                insights = self.query(query, {"action": "update_user", "user_id": user_id, "user_data": {k: v for k, v in user_data.items() if k != 'password'}})
+                return {
+                    "success": True,
+                    "action": "update",
+                    "user_id": user_id,
+                    "user_data": {k: v for k, v in user_data.items() if k != 'password'},
+                    "insights": insights
+                }
+                
+            elif action == "delete" and user_id:
+                query = f"""
+                Analyzing impact of deleting user #{user_id}.
+                
+                What considerations should we take into account before removing this user?
+                Are there regulatory or data protection issues to address?
+                """
+                insights = self.query(query, {"action": "delete_user", "user_id": user_id})
+                return {
+                    "success": True,
+                    "action": "delete",
+                    "user_id": user_id,
+                    "insights": insights
+                }
+                
+            elif action == "get" and user_id:
+                query = f"""
+                Analyzing user #{user_id}.
+                
+                What purchasing patterns does this user exhibit?
+                What personalized recommendations would be appropriate?
+                """
+                insights = self.query(query, {"action": "get_user", "user_id": user_id})
+                return {
+                    "success": True,
+                    "action": "get",
+                    "user_id": user_id,
+                    "insights": insights
+                }
+                
+            elif action == "list":
+                query = """
+                Analyzing our user base.
+                
+                What are the key user segments in our database?
+                How can we improve user engagement and retention?
+                """
+                insights = self.query(query, {"action": "list_users"})
+                return {
+                    "success": True,
+                    "action": "list",
+                    "insights": insights
+                }
+                
+            else:
+                return {
+                    "success": False,
+                    "error": f"Invalid action '{action}' or missing required parameters"
+                }
+                
+        except Exception as e:
+            print(f"Error in user management: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def manage_virtual_try_on(self, action: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Manage the virtual try-on feature
+        
+        Args:
+            action: The action to perform (analyze, statistics, help)
+            data: Optional data for the analysis
+        
+        Returns:
+            Dictionary with operation result and insights
+        """
+        try:
+            if action == "analyze" and data:
+                query = f"""
+                Analyzing virtual try-on usage with the following data:
+                {json.dumps(data, indent=2)}
+                
+                What patterns do we see in virtual try-on usage?
+                How does virtual try-on impact purchase decisions?
+                """
+                insights = self.query(query, {"action": "analyze_try_on", "data": data})
+                return {
+                    "success": True,
+                    "action": "analyze",
+                    "data": data,
+                    "insights": insights
+                }
+                
+            elif action == "statistics":
+                query = """
+                Analyzing virtual try-on statistics.
+                
+                What are the key metrics we should track for virtual try-on?
+                How can we improve conversion rates from try-on to purchase?
+                """
+                insights = self.query(query, {"action": "try_on_statistics"})
+                return {
+                    "success": True,
+                    "action": "statistics",
+                    "insights": insights
+                }
+                
+            elif action == "help":
+                query = """
+                Provide guidance on optimizing our virtual try-on feature.
+                
+                How can we improve the user experience?
+                What technical improvements would be most beneficial?
+                How should we market this feature to customers?
+                """
+                insights = self.query(query, {"action": "try_on_help"})
+                return {
+                    "success": True,
+                    "action": "help",
+                    "insights": insights
+                }
+                
+            else:
+                return {
+                    "success": False,
+                    "error": f"Invalid action '{action}' or missing required parameters"
+                }
+                
+        except Exception as e:
+            print(f"Error in virtual try-on management: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def generate_marketing_campaign(self, campaign_type: str, target_audience: Optional[str] = None, products: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """
+        Generate marketing campaign suggestions
+        
+        Args:
+            campaign_type: Type of campaign (email, social, seasonal, promotion)
+            target_audience: Target audience description
+            products: List of products to include in the campaign
+        
+        Returns:
+            Dictionary with campaign suggestions
+        """
+        try:
+            # Build the query based on the campaign type
+            query = f"""
+            Generate a {campaign_type} marketing campaign"""
+            
+            if target_audience:
+                query += f" targeting {target_audience}"
+                
+            if products:
+                query += f" featuring the following products:\n{json.dumps([p.get('name', f'Product #{p.get('id', 'unknown')}') for p in products], indent=2)}"
+                
+            query += """
+            
+            Include:
+            1. Campaign theme and messaging
+            2. Key selling points to emphasize
+            3. Call-to-action recommendations
+            4. Timing considerations
+            5. Success metrics to track
+            """
+            
+            campaign = self.query(query, {
+                "campaign_type": campaign_type,
+                "target_audience": target_audience,
+                "products": products
+            })
+            
+            return {
+                "success": True,
+                "campaign_type": campaign_type,
+                "target_audience": target_audience,
+                "campaign_suggestions": campaign
+            }
+            
+        except Exception as e:
+            print(f"Error generating marketing campaign: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def analyze_website_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyze website performance metrics
+        
+        Args:
+            metrics: Dictionary with website performance metrics
+        
+        Returns:
+            Dictionary with analysis and recommendations
+        """
+        try:
+            query = f"""
+            Analyze the following website performance metrics:
+            {json.dumps(metrics, indent=2)}
+            
+            What trends can be identified?
+            Which pages are performing well/poorly?
+            What specific improvements would you recommend?
+            How do these metrics compare to industry standards?
+            """
+            
+            analysis = self.query(query, {"metrics": metrics})
+            
+            return {
+                "success": True,
+                "analysis": analysis
+            }
+            
+        except Exception as e:
+            print(f"Error analyzing website performance: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def get_business_dashboard(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a comprehensive business dashboard with insights
+        
+        Args:
+            data: Dictionary with various business metrics
+        
+        Returns:
+            Dictionary with dashboard insights
+        """
+        try:
+            query = f"""
+            Create a comprehensive business dashboard based on these metrics:
+            {json.dumps(data, indent=2)}
+            
+            Provide:
+            1. Executive summary of current business state
+            2. Key areas of concern that need attention
+            3. Growth opportunities to pursue
+            4. Actionable recommendations for the next 30 days
+            """
+            
+            dashboard = self.query(query, {"dashboard_data": data})
+            
+            return {
+                "success": True,
+                "dashboard": dashboard
+            }
+            
+        except Exception as e:
+            print(f"Error generating business dashboard: {e}")
+            return {"success": False, "error": str(e)}

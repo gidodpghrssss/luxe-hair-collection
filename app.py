@@ -1012,7 +1012,7 @@ def virtual_try_on_api():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-@app.route('/admin/ai-query', methods=['POST'])
+@app.route('/admin-ai-query-api', methods=['POST'])
 @login_required
 def admin_ai_query_api():
     """API endpoint for admin AI queries"""
@@ -1075,6 +1075,474 @@ def admin_ai_query_api():
         return jsonify({
             "error": str(e),
             "response": "I encountered an error processing your query. Please try again."
+        }), 500
+
+# ---------- NEW ADMIN AGENT API ENDPOINTS ----------
+
+@app.route('/api/admin/manage-products', methods=['POST'])
+@login_required
+def admin_manage_products_api():
+    """API endpoint for AI-assisted product management"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    action = data.get('action')
+    product_data = data.get('product_data')
+    product_id = data.get('product_id')
+    
+    if not action:
+        return jsonify({"success": False, "error": "Action is required"}), 400
+        
+    try:
+        if admin_agent:
+            result = admin_agent.manage_products(action, product_data, product_id)
+            
+            # For create/update actions, actually modify the database
+            if result.get('success') and action == 'create' and product_data:
+                new_product = Product(
+                    name=product_data.get('name', 'New Product'),
+                    description=product_data.get('description', ''),
+                    price=float(product_data.get('price', 0)),
+                    category=product_data.get('category', ''),
+                    image_url=product_data.get('image_url', ''),
+                    stock=int(product_data.get('stock', 0))
+                )
+                db.session.add(new_product)
+                db.session.commit()
+                result['product_id'] = new_product.id
+                
+            elif result.get('success') and action == 'update' and product_id and product_data:
+                product = Product.query.get(product_id)
+                if product:
+                    if 'name' in product_data:
+                        product.name = product_data['name']
+                    if 'description' in product_data:
+                        product.description = product_data['description']
+                    if 'price' in product_data:
+                        product.price = float(product_data['price'])
+                    if 'category' in product_data:
+                        product.category = product_data['category']
+                    if 'image_url' in product_data:
+                        product.image_url = product_data['image_url']
+                    if 'stock' in product_data:
+                        product.stock = int(product_data['stock'])
+                    product.updated_at = datetime.utcnow()
+                    db.session.commit()
+                else:
+                    return jsonify({"success": False, "error": f"Product #{product_id} not found"}), 404
+                    
+            elif result.get('success') and action == 'delete' and product_id:
+                product = Product.query.get(product_id)
+                if product:
+                    db.session.delete(product)
+                    db.session.commit()
+                else:
+                    return jsonify({"success": False, "error": f"Product #{product_id} not found"}), 404
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type=f"product_{action}",
+                details=json.dumps({
+                    "product_id": product_id,
+                    "product_data": product_data,
+                    "action": action
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error in admin product management: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/manage-orders', methods=['POST'])
+@login_required
+def admin_manage_orders_api():
+    """API endpoint for AI-assisted order management"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    action = data.get('action')
+    order_data = data.get('order_data')
+    order_id = data.get('order_id')
+    
+    if not action:
+        return jsonify({"success": False, "error": "Action is required"}), 400
+        
+    try:
+        if admin_agent:
+            result = admin_agent.manage_orders(action, order_data, order_id)
+            
+            # For update action, actually modify the database
+            if result.get('success') and action == 'update' and order_id and order_data:
+                order = Order.query.get(order_id)
+                if order:
+                    if 'status' in order_data:
+                        order.status = order_data['status']
+                    if 'tracking_number' in order_data:
+                        order.tracking_number = order_data['tracking_number']
+                    db.session.commit()
+                else:
+                    return jsonify({"success": False, "error": f"Order #{order_id} not found"}), 404
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type=f"order_{action}",
+                details=json.dumps({
+                    "order_id": order_id,
+                    "order_data": order_data,
+                    "action": action
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error in admin order management: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/manage-users', methods=['POST'])
+@login_required
+def admin_manage_users_api():
+    """API endpoint for AI-assisted user management"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    action = data.get('action')
+    user_data = data.get('user_data')
+    user_id = data.get('user_id')
+    
+    if not action:
+        return jsonify({"success": False, "error": "Action is required"}), 400
+        
+    try:
+        if admin_agent:
+            result = admin_agent.manage_users(action, user_data, user_id)
+            
+            # For create/update actions, actually modify the database
+            if result.get('success') and action == 'create' and user_data:
+                # Check if user with this email already exists
+                if User.query.filter_by(email=user_data.get('email')).first():
+                    return jsonify({"success": False, "error": "User with this email already exists"}), 400
+                    
+                new_user = User(
+                    email=user_data.get('email'),
+                    name=user_data.get('name', ''),
+                    password=generate_password_hash(user_data.get('password', 'default_password')),
+                    is_admin=user_data.get('is_admin', False),
+                    phone=user_data.get('phone', ''),
+                    address=user_data.get('address', '')
+                )
+                db.session.add(new_user)
+                db.session.commit()
+                result['user_id'] = new_user.id
+                
+            elif result.get('success') and action == 'update' and user_id and user_data:
+                user = User.query.get(user_id)
+                if user:
+                    if 'email' in user_data:
+                        # Check if another user already has this email
+                        existing_user = User.query.filter_by(email=user_data['email']).first()
+                        if existing_user and existing_user.id != user.id:
+                            return jsonify({"success": False, "error": "Email already in use by another user"}), 400
+                        user.email = user_data['email']
+                    if 'name' in user_data:
+                        user.name = user_data['name']
+                    if 'password' in user_data and user_data['password']:
+                        user.password = generate_password_hash(user_data['password'])
+                    if 'is_admin' in user_data:
+                        user.is_admin = bool(user_data['is_admin'])
+                    if 'phone' in user_data:
+                        user.phone = user_data['phone']
+                    if 'address' in user_data:
+                        user.address = user_data['address']
+                    db.session.commit()
+                else:
+                    return jsonify({"success": False, "error": f"User #{user_id} not found"}), 404
+                    
+            elif result.get('success') and action == 'delete' and user_id:
+                # Prevent deleting oneself
+                if int(user_id) == current_user.id:
+                    return jsonify({"success": False, "error": "Cannot delete your own account"}), 400
+                    
+                user = User.query.get(user_id)
+                if user:
+                    db.session.delete(user)
+                    db.session.commit()
+                else:
+                    return jsonify({"success": False, "error": f"User #{user_id} not found"}), 404
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type=f"user_{action}",
+                details=json.dumps({
+                    "user_id": user_id,
+                    "user_data": {k: v for k, v in user_data.items() if k != 'password'} if user_data else None,
+                    "action": action
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error in admin user management: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/virtual-try-on', methods=['POST'])
+@login_required
+def admin_virtual_try_on_api():
+    """API endpoint for AI-assisted virtual try-on management"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    action = data.get('action')
+    try_on_data = data.get('data')
+    
+    if not action:
+        return jsonify({"success": False, "error": "Action is required"}), 400
+        
+    try:
+        if admin_agent:
+            result = admin_agent.manage_virtual_try_on(action, try_on_data)
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type=f"virtual_try_on_{action}",
+                details=json.dumps({
+                    "action": action,
+                    "data": try_on_data
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error in admin virtual try-on management: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/marketing-campaign', methods=['POST'])
+@login_required
+def admin_marketing_campaign_api():
+    """API endpoint for AI-generated marketing campaigns"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    campaign_type = data.get('campaign_type')
+    target_audience = data.get('target_audience')
+    product_ids = data.get('product_ids', [])
+    
+    if not campaign_type:
+        return jsonify({"success": False, "error": "Campaign type is required"}), 400
+        
+    try:
+        if admin_agent:
+            # Get full product details if product IDs are provided
+            products = []
+            if product_ids:
+                products = Product.query.filter(Product.id.in_(product_ids)).all()
+                products = [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "price": p.price,
+                        "category": p.category,
+                        "description": p.description
+                    }
+                    for p in products
+                ]
+            
+            result = admin_agent.generate_marketing_campaign(campaign_type, target_audience, products)
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type="marketing_campaign",
+                details=json.dumps({
+                    "campaign_type": campaign_type,
+                    "target_audience": target_audience,
+                    "product_ids": product_ids
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error generating marketing campaign: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/website-analytics', methods=['POST'])
+@login_required
+def admin_website_analytics_api():
+    """API endpoint for AI-assisted website analytics"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    metrics = data.get('metrics', {})
+    
+    try:
+        if admin_agent:
+            result = admin_agent.analyze_website_performance(metrics)
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type="website_analytics",
+                details=json.dumps({
+                    "metrics": metrics
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error analyzing website performance: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/admin/business-dashboard', methods=['POST'])
+@login_required
+def admin_business_dashboard_api():
+    """API endpoint for AI-generated business dashboard"""
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+        
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Request must be JSON"}), 400
+        
+    data = request.json
+    dashboard_data = data.get('data', {})
+    
+    try:
+        if admin_agent:
+            # If no data is provided, gather some basic metrics
+            if not dashboard_data:
+                total_products = Product.query.count()
+                total_users = User.query.count()
+                total_orders = Order.query.count()
+                
+                # Calculate recent revenue (last 30 days)
+                recent_orders = Order.query.filter(
+                    Order.order_date >= datetime.utcnow() - timedelta(days=30)
+                ).all()
+                recent_revenue = sum(order.total_amount for order in recent_orders)
+                
+                # Get low stock products
+                low_stock_products = Product.query.filter(Product.stock <= 5).count()
+                
+                dashboard_data = {
+                    "total_products": total_products,
+                    "total_users": total_users,
+                    "total_orders": total_orders,
+                    "recent_orders": len(recent_orders),
+                    "recent_revenue": recent_revenue,
+                    "low_stock_products": low_stock_products
+                }
+            
+            result = admin_agent.get_business_dashboard(dashboard_data)
+            
+            # Log the admin action
+            admin_action = AdminAction(
+                admin_id=current_user.id,
+                action_type="business_dashboard",
+                details=json.dumps({
+                    "dashboard_data": dashboard_data
+                })
+            )
+            db.session.add(admin_action)
+            db.session.commit()
+            
+            return jsonify(result)
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Admin agent is not available"
+            }), 503
+    except Exception as e:
+        app.logger.error(f"Error generating business dashboard: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"An error occurred: {str(e)}"
         }), 500
 
 # Create database tables
