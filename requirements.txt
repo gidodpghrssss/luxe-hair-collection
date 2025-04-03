@@ -15,9 +15,9 @@ SQLAlchemy==2.0.23
 # Shopify integration
 ShopifyAPI==12.2.0
 
-# AI and ML dependencies - using older versions known to be compatible
+# AI and ML dependencies - using newer versions for better compatibility
+llama-index-core>=0.1.0
 llama-index-llms-nebius==0.1.0
-llama-index==0.9.10
 openai==1.60.2
 langchain==0.0.335
 pymupdf==1.23.7

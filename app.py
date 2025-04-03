@@ -17,10 +17,10 @@ except ImportError:
         print("Warning: Shopify API could not be imported. Some features may not work.")
         shopify = None
 
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
-from llama_index.node_parser import SimpleNodeParser
+from llama_index_core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
+from llama_index_core.llms.nebius import NebiusLLM
+from llama_index_core.embeddings.nebius import NebiusEmbedding
+from llama_index_core.node_parser import SimpleNodeParser
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

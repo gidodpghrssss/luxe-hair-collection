@@ -1,20 +1,21 @@
 """
-Admin AI Agent using LlamaIndex and Nebius API for Luxe Hair Collection
-This agent assists with inventory management, offers, user data, and analytics
+Admin Agent for Luxe Hair Collection
+Handles product management, user management, and AI-powered analytics
 """
 
 import os
 import json
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import pandas as pd
+from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime
 from dotenv import load_dotenv
 
 # LlamaIndex imports
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
-from llama_index.node_parser import SimpleNodeParser
+from llama_index_core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
+from llama_index_core.llms.nebius import NebiusLLM
+from llama_index_core.embeddings.nebius import NebiusEmbedding
+from llama_index_core.node_parser import SimpleNodeParser
+from llama_index_core.chat_engine import ContextChatEngine
+from llama_index_core.memory import ChatMemoryBuffer
 
 # Load environment variables
 load_dotenv()
