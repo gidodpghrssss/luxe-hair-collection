@@ -1,5 +1,5 @@
 """
-Customer-facing chatbot using LlamaIndex with Nebius API for Luxe Hair Collection
+Customer-facing chatbot using LlamaIndex with OpenAI for Luxe Hair Collection
 Handles product inquiries, FAQ, and support requests
 """
 
@@ -11,8 +11,8 @@ from dotenv import load_dotenv
 
 # LlamaIndex imports
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.node_parser import SimpleNodeParser
 from llama_index.chat_engine import ContextChatEngine
 from llama_index.memory import ChatMemoryBuffer
@@ -24,21 +24,22 @@ class CustomerChatbot:
     """LlamaIndex-based chatbot for customer support"""
     
     def __init__(self):
-        """Initialize the chatbot with LlamaIndex and Nebius integration"""
-        self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
+        """Initialize the chatbot with LlamaIndex and OpenAI integration"""
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         
-        if not self.nebius_api_key:
-            raise ValueError("NEBIUS_API_KEY not found in environment variables")
+        if not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
 
-        # Initialize Nebius LLM
-        self.llm = NebiusLLM(
-            api_key=self.nebius_api_key,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
+        # Initialize OpenAI LLM
+        self.llm = OpenAI(
+            api_key=self.openai_api_key,
+            model="text-davinci-003"
         )
         
-        # Initialize Nebius Embedding
-        self.embedding_model = NebiusEmbedding(
-            api_key=self.nebius_api_key
+        # Initialize OpenAI Embedding
+        self.embedding_model = OpenAIEmbedding(
+            api_key=self.openai_api_key,
+            model="text-embedding-ada-002"
         )
         
         # Create service context

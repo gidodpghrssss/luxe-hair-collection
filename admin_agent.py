@@ -1,5 +1,5 @@
 """
-Admin AI Agent using LlamaIndex and Nebius API for Luxe Hair Collection
+Admin AI Agent using LlamaIndex and OpenAI for Luxe Hair Collection
 This agent assists with inventory management, offers, user data, and analytics
 """
 
@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 
 # LlamaIndex imports
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.node_parser import SimpleNodeParser
 
 # Load environment variables
@@ -23,21 +23,22 @@ class AdminAgent:
     """LlamaIndex-based admin agent for managing the Luxe Hair business"""
     
     def __init__(self):
-        """Initialize the admin agent with LlamaIndex and Nebius integration"""
-        self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
+        """Initialize the admin agent with LlamaIndex and OpenAI integration"""
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         
-        if not self.nebius_api_key:
-            raise ValueError("NEBIUS_API_KEY not found in environment variables")
+        if not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
 
-        # Initialize Nebius LLM
-        self.llm = NebiusLLM(
-            api_key=self.nebius_api_key,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
+        # Initialize OpenAI LLM
+        self.llm = OpenAI(
+            api_key=self.openai_api_key,
+            model="text-davinci-003"
         )
         
-        # Initialize Nebius Embedding
-        self.embedding_model = NebiusEmbedding(
-            api_key=self.nebius_api_key
+        # Initialize OpenAI Embedding
+        self.embedding_model = OpenAIEmbedding(
+            api_key=self.openai_api_key,
+            model="text-embedding-ada-002"
         )
         
         # Create service context
@@ -209,7 +210,7 @@ class AdminAgent:
     
     def query(self, user_query: str, business_data: Optional[Dict[str, Any]] = None) -> str:
         """
-        Process a business query using LlamaIndex and Nebius integration
+        Process a business query using LlamaIndex and OpenAI integration
         
         Args:
             user_query: The user's question or instruction
