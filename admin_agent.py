@@ -11,9 +11,9 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # LlamaIndex imports
-from llama_index.llms import NebiusLLM
-from llama_index import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
-from llama_index.schema import Document
+from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
 from llama_index.node_parser import SimpleNodeParser
 from llama_index import StorageContext, load_index_from_storage
 
@@ -32,7 +32,7 @@ class AdminAgent:
             raise ValueError("Missing Nebius API key in environment variables")
         
         # Initialize Nebius LLM
-        self.llm = NebiusLLM(
+        self.llm = OpenAI(
             api_key=self.nebius_api_key,
             model=self.nebius_chat_model
         )

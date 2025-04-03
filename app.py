@@ -18,8 +18,8 @@ except ImportError:
         shopify = None
 
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms import NebiusLLM
-from llama_index.embeddings import NebiusEmbedding
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
 from llama_index.node_parser import SimpleNodeParser
 import pandas as pd
 import numpy as np
@@ -77,12 +77,12 @@ service_context = None
 
 if nebius_api_key:
     try:
-        llm = NebiusLLM(
+        llm = OpenAI(
             api_key=nebius_api_key,
             model=nebius_chat_model
         )
         
-        embedding_model = NebiusEmbedding(
+        embedding_model = OpenAIEmbedding(
             api_key=nebius_api_key,
             model=nebius_embeddings_model
         )
