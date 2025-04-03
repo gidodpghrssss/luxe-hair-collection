@@ -21,6 +21,8 @@ from llama_index_core import VectorStoreIndex, SimpleDirectoryReader, ServiceCon
 from llama_index_core.llms.nebius import NebiusLLM
 from llama_index_core.embeddings.nebius import NebiusEmbedding
 from llama_index_core.node_parser import SimpleNodeParser
+from llama_index_core.chat_engine import ContextChatEngine
+from llama_index_core.memory import ChatMemoryBuffer
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

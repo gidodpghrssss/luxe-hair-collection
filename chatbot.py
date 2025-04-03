@@ -10,12 +10,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # LlamaIndex imports
-from llama_index_core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index_core.llms.nebius import NebiusLLM
-from llama_index_core.embeddings.nebius import NebiusEmbedding
-from llama_index_core.node_parser import SimpleNodeParser
-from llama_index_core.chat_engine import ContextChatEngine
-from llama_index_core.memory import ChatMemoryBuffer
+from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
+from llama_index.llms.nebius import NebiusLLM
+from llama_index.embeddings.nebius import NebiusEmbedding
+from llama_index.node_parser import SimpleNodeParser
+from llama_index.chat_engine import ContextChatEngine
+from llama_index.memory import ChatMemoryBuffer
 
 # Load environment variables
 load_dotenv()
