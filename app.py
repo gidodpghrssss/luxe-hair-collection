@@ -18,8 +18,8 @@ except ImportError:
         shopify = None
 
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.nebius import NebiusLLM
+from llama_index.embeddings.nebius import NebiusEmbedding
 from llama_index.node_parser import SimpleNodeParser
 import pandas as pd
 import numpy as np
@@ -64,45 +64,45 @@ shopify_api_key = os.getenv('SHOPIFY_API_KEY')
 shopify_api_secret = os.getenv('SHOPIFY_API_SECRET')
 shopify_shop_url = os.getenv('SHOPIFY_SHOP_URL')
 
-# OpenAI API setup
-openai_api_key = os.getenv('OPENAI_API_KEY')
-openai_api_url = os.getenv('OPENAI_API_URL', 'https://api.openai.com/v1')
-openai_chat_model = os.getenv('OPENAI_CHAT_MODEL', 'text-davinci-003')
-openai_embeddings_model = os.getenv('OPENAI_EMBEDDINGS_MODEL', 'text-embedding-ada-002')
+# Nebius API setup
+nebius_api_key = os.getenv('NEBIUS_API_KEY')
+nebius_api_url = os.getenv('NEBIUS_API_URL', 'https://api.nebius.ai/v1')
+nebius_chat_model = os.getenv('NEBIUS_CHAT_MODEL', 'llama-3-8b-instruct')
+nebius_embeddings_model = os.getenv('NEBIUS_EMBEDDINGS_MODEL', 'text-embedding-3-small')
 
-# Initialize Llama Index with OpenAI only if API key is available
+# Initialize Llama Index with Nebius only if API key is available
 llm = None
 embedding_model = None
 service_context = None
 
-if openai_api_key:
+if nebius_api_key:
     try:
-        llm = OpenAI(
-            api_key=openai_api_key,
-            model=openai_chat_model
+        llm = NebiusLLM(
+            api_key=nebius_api_key,
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
         )
         
-        embedding_model = OpenAIEmbedding(
-            api_key=openai_api_key,
-            model=openai_embeddings_model
+        embedding_model = NebiusEmbedding(
+            api_key=nebius_api_key,
+            model=nebius_embeddings_model
         )
         
         service_context = ServiceContext.from_defaults(
             llm=llm,
             embed_model=embedding_model
         )
-        print("OpenAI API initialized successfully")
+        print("Nebius API initialized successfully")
     except Exception as e:
-        print(f"Error initializing OpenAI API: {e}")
+        print(f"Error initializing Nebius API: {e}")
 else:
-    print("Warning: OpenAI API key not provided. AI features will not be available.")
+    print("Warning: Nebius API key not provided. AI features will not be available.")
 
 # Initialize VirtualTryOn, AdminAgent, and CustomerChatbot
 virtual_try_on = None
 admin_agent = None
 chatbot = None
 
-if openai_api_key and service_context:
+if nebius_api_key and service_context:
     try:
         print("Initializing AI components...")
         if os.getenv('ENABLE_VIRTUAL_TRY_ON', 'true').lower() == 'true':
@@ -129,7 +129,7 @@ if openai_api_key and service_context:
     except Exception as e:
         print(f"Error during AI components initialization: {e}")
 else:
-    print("AI components initialization skipped: OpenAI API key or service context not available")
+    print("AI components initialization skipped: Nebius API key or service context not available")
 
 # Database Models
 class User(db.Model, UserMixin):
@@ -262,15 +262,15 @@ def sync_shopify_products():
         print(f"Error syncing Shopify products: {e}")
         return False
 
-def get_openai_response(prompt, system_message="You are a helpful assistant for Luxe Hair Collection, specializing in premium hair products."):
+def get_nebius_response(prompt, system_message="You are a helpful assistant for Luxe Hair Collection, specializing in premium hair products."):
     try:
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        if not OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY")
+        if not NEBIUS_API_KEY:
+            raise ValueError("NEBIUS_API_KEY not found in environment variables")
 
-        llm = OpenAI(
-            api_key=OPENAI_API_KEY,
-            model="text-davinci-003"
+        llm = NebiusLLM(
+            api_key=NEBIUS_API_KEY,
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
         )
 
         # Create a chat message history
@@ -283,11 +283,11 @@ def get_openai_response(prompt, system_message="You are a helpful assistant for 
         response = llm.chat(messages)
         return response.text
     except Exception as e:
-        print(f"Error in get_openai_response: {str(e)}")
+        print(f"Error in get_nebius_response: {str(e)}")
         return "I'm sorry, I encountered an error while processing your request. Please try again later."
 
 def admin_ai_query(query, data_context=None):
-    """Process admin AI queries through OpenAI LLM"""
+    """Process admin AI queries through Nebius LLM"""
     try:
         # Build context from data if provided
         context = ""
@@ -306,7 +306,7 @@ def admin_ai_query(query, data_context=None):
         Please provide a detailed analysis and actionable recommendations.
         """
         
-        return get_openai_response(prompt, system_message="You are an expert business operations assistant for a premium hair products company.")
+        return get_nebius_response(prompt, system_message="You are an expert business operations assistant for a premium hair products company.")
     except Exception as e:
         print(f"Error in admin AI query: {e}")
         return "I encountered an error processing your query. Please try again later."
