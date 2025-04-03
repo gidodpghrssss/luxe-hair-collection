@@ -18,8 +18,8 @@ except ImportError:
         shopify = None
 
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms import NebiusLLM
-from llama_index.embeddings import NebiusEmbedding
+from llama_index.llms.nebius import NebiusLLM
+from llama_index.embeddings.nebius import NebiusEmbedding
 from llama_index.node_parser import SimpleNodeParser
 import pandas as pd
 import numpy as np
@@ -79,7 +79,7 @@ if nebius_api_key:
     try:
         llm = NebiusLLM(
             api_key=nebius_api_key,
-            model=nebius_chat_model
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
         )
         
         embedding_model = NebiusEmbedding(
@@ -263,18 +263,28 @@ def sync_shopify_products():
         return False
 
 def get_nebius_response(prompt, system_message="You are a helpful assistant for Luxe Hair Collection, specializing in premium hair products."):
-    """Get response from Nebius API"""
     try:
+        NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY")
+        if not NEBIUS_API_KEY:
+            raise ValueError("NEBIUS_API_KEY not found in environment variables")
+
+        llm = NebiusLLM(
+            api_key=NEBIUS_API_KEY,
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
+        )
+
+        # Create a chat message history
         messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": prompt}
         ]
-        
+
+        # Get response
         response = llm.chat(messages)
-        return response.message.content
+        return response.text
     except Exception as e:
-        print(f"Error getting Nebius response: {e}")
-        return "Sorry, I'm having trouble connecting to the AI service. Please try again later."
+        print(f"Error in get_nebius_response: {str(e)}")
+        return "I'm sorry, I encountered an error while processing your request. Please try again later."
 
 def admin_ai_query(query, data_context=None):
     """Process admin AI queries through Nebius LLM"""

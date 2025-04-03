@@ -11,11 +11,10 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # LlamaIndex imports
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms import NebiusLLM
-from llama_index.embeddings import NebiusEmbedding
+from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
+from llama_index.llms.nebius import NebiusLLM
+from llama_index.embeddings.nebius import NebiusEmbedding
 from llama_index.node_parser import SimpleNodeParser
-from llama_index import StorageContext, load_index_from_storage
 
 # Load environment variables
 load_dotenv()
@@ -26,22 +25,38 @@ class AdminAgent:
     def __init__(self):
         """Initialize the admin agent with LlamaIndex and Nebius integration"""
         self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
-        self.nebius_chat_model = os.getenv('NEBIUS_CHAT_MODEL', 'llama-3-8b-instruct')
         
         if not self.nebius_api_key:
-            raise ValueError("Missing Nebius API key in environment variables")
-        
+            raise ValueError("NEBIUS_API_KEY not found in environment variables")
+
         # Initialize Nebius LLM
         self.llm = NebiusLLM(
             api_key=self.nebius_api_key,
-            model=self.nebius_chat_model
+            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
         )
         
-        # Set up service context
-        self.service_context = ServiceContext.from_defaults(llm=self.llm)
+        # Initialize Nebius Embedding
+        self.embedding_model = NebiusEmbedding(
+            api_key=self.nebius_api_key
+        )
         
-        # Initialize knowledge base
-        self._setup_knowledge_base()
+        # Create service context
+        self.service_context = ServiceContext.from_defaults(
+            llm=self.llm,
+            embed_model=self.embedding_model
+        )
+        
+        # Initialize node parser
+        self.node_parser = SimpleNodeParser.from_defaults(
+            service_context=self.service_context
+        )
+        
+        # Load or create index
+        self.storage_context = StorageContext.from_defaults()
+        try:
+            self.index = load_index_from_storage(self.storage_context)
+        except Exception:
+            self.index = VectorStoreIndex([], service_context=self.service_context)
     
     def _setup_knowledge_base(self):
         """Set up the agent's knowledge base using LlamaIndex"""
@@ -578,7 +593,7 @@ class AdminAgent:
                 Analyzing impact of deleting user #{user_id}.
                 
                 What considerations should we take into account before removing this user?
-                Are there regulatory or data protection issues to address?
+                Are there any regulatory or data protection issues to address?
                 """
                 insights = self.query(query, {"action": "delete_user", "user_id": user_id})
                 return {
