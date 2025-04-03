@@ -18,8 +18,7 @@ ShopifyAPI==12.2.0
 # AI and ML dependencies - using older versions known to be compatible
 llama-index==0.8.54
 pymupdf==1.23.7
-langchain==0.0.207
-openai==0.28.1
+langchain==0.0.335
 tiktoken==0.5.1
 transformers==4.33.2
 torch==2.0.1
