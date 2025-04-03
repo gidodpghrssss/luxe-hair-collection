@@ -16,7 +16,7 @@ SQLAlchemy==2.0.23
 ShopifyAPI==12.2.0
 
 # AI and ML dependencies
-llama-index-core==0.10.10
+llama-index-core>=0.12.0,<0.13.0
 llama-index-llms-nebius==0.1.1
 llama-index-embeddings-nebius==0.2.0
 llama-index-vector-stores-postgres==0.1.2
