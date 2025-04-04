@@ -1,5 +1,5 @@
 """
-Customer-facing chatbot using LlamaIndex with Nebius API for Luxe Hair Collection
+Customer-facing chatbot using Nebius API for Luxe Hair Collection
 Handles product inquiries, FAQ, and support requests
 """
 
@@ -9,22 +9,16 @@ from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 from dotenv import load_dotenv
 
-# LlamaIndex imports
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
-from llama_index.node_parser import SimpleNodeParser
-from llama_index.chat_engine import ContextChatEngine
-from llama_index.memory import ChatMemoryBuffer
-
 # Load environment variables
 load_dotenv()
 
+from nebius_ai import NebiusLLM, NebiusEmbedding
+
 class CustomerChatbot:
-    """LlamaIndex-based chatbot for customer support"""
+    """Nebius-based chatbot for customer support"""
     
     def __init__(self):
-        """Initialize the chatbot with LlamaIndex and Nebius integration"""
+        """Initialize the chatbot with Nebius integration"""
         self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
         
         if not self.nebius_api_key:
@@ -40,73 +34,45 @@ class CustomerChatbot:
         self.embedding_model = NebiusEmbedding(
             api_key=self.nebius_api_key
         )
+
+    def process_message(self, message: str, context: Optional[List[Dict]] = None) -> str:
+        """Process a user message and return a response"""
+        # Create context string from chat history
+        context_str = ""
+        if context:
+            for msg in context:
+                context_str += f"{msg['role']}: {msg['content']}\n"
         
-        # Create service context
-        self.service_context = ServiceContext.from_defaults(
-            llm=self.llm,
-            embed_model=self.embedding_model
-        )
+        # Format the prompt
+        prompt = f"{context_str}\nUser: {message}\nAssistant:" if context_str else f"User: {message}\nAssistant:"
         
-        # Initialize node parser
-        self.node_parser = SimpleNodeParser.from_defaults(
-            service_context=self.service_context
-        )
+        # Get response from Nebius
+        response = self.llm.generate(prompt)
+        return response.text
+
+    def get_embedding(self, text: str) -> List[float]:
+        """Get embedding for a text"""
+        return self.embedding_model.embed(text)
+
+    def search_similar(self, query: str, documents: List[str], top_k: int = 3) -> List[Tuple[str, float]]:
+        """Find most similar documents to a query"""
+        query_embedding = self.get_embedding(query)
         
-        # Load or create index
-        self.storage_context = StorageContext.from_defaults()
-        try:
-            self.index = load_index_from_storage(self.storage_context)
-        except Exception:
-            self.index = VectorStoreIndex([], service_context=self.service_context)
+        similarities = []
+        for doc in documents:
+            doc_embedding = self.get_embedding(doc)
+            similarity = self._cosine_similarity(query_embedding, doc_embedding)
+            similarities.append((doc, similarity))
         
-        # Initialize knowledge base
-        self._setup_knowledge_base()
-        
-        # Initialize chat memory
-        self.memory = ChatMemoryBuffer.from_defaults(token_limit=4096)
-    
-    def _setup_knowledge_base(self):
-        """Set up the chatbot's knowledge base using LlamaIndex"""
-        # In production (like Render), we won't be able to persist storage between deploys
-        # So we'll create the knowledge base each time
-        is_production = os.getenv('FLASK_ENV') == 'production'
-        storage_dir = os.path.join(os.getcwd(), "chatbot_storage")
-        
-        if not is_production and os.path.exists(storage_dir):
-            try:
-                # Load existing index in development
-                storage_context = StorageContext.from_defaults(persist_dir=storage_dir)
-                self.index = load_index_from_storage(storage_context, service_context=self.service_context)
-                print("Loaded existing chatbot knowledge base")
-            except Exception as e:
-                print(f"Error loading existing chatbot index: {e}")
-                self._create_new_knowledge_base(storage_dir)
-        else:
-            self._create_new_knowledge_base(storage_dir)
-    
-    def _create_new_knowledge_base(self, storage_dir: str):
-        """Create a new knowledge base with product and FAQ knowledge"""
-        # Create FAQ knowledge documents
-        documents = [
-            Document(text=self._get_product_knowledge(), metadata={"source": "product_info"}),
-            Document(text=self._get_faq_knowledge(), metadata={"source": "faq"}),
-            Document(text=self._get_care_instructions(), metadata={"source": "care_instructions"})
-        ]
-        
-        # Parse nodes
-        nodes = self.node_parser.get_nodes_from_documents(documents)
-        
-        # Create index
-        self.index = VectorStoreIndex(nodes, service_context=self.service_context)
-        
-        # Save index in development environment only
-        if os.getenv('FLASK_ENV') != 'production':
-            os.makedirs(storage_dir, exist_ok=True)
-            self.index.storage_context.persist(persist_dir=storage_dir)
-            print("Created and saved new chatbot knowledge base")
-        else:
-            print("Created in-memory chatbot knowledge base (not persisted in production)")
-    
+        return sorted(similarities, key=lambda x: x[1], reverse=True)[:top_k]
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        norm1 = sum(a * a for a in vec1) ** 0.5
+        norm2 = sum(b * b for b in vec2) ** 0.5
+        return dot_product / (norm1 * norm2)
+
     def _get_product_knowledge(self) -> str:
         """Get knowledge about products"""
         return """
@@ -167,7 +133,7 @@ class CustomerChatbot:
         - Ombré and balayage options available
         - Custom coloring services available for an additional fee
         """
-    
+
     def _get_faq_knowledge(self) -> str:
         """Get knowledge about frequently asked questions"""
         return """
@@ -241,7 +207,7 @@ class CustomerChatbot:
         Q: How can I prevent tangling?
         A: Brush gently from ends to roots daily, avoid sleeping with wet hair, use silk pillowcases, and apply leave-in conditioner regularly.
         """
-    
+
     def _get_care_instructions(self) -> str:
         """Get knowledge about hair care instructions"""
         return """
@@ -314,7 +280,7 @@ class CustomerChatbot:
         3. Keep all hair products in a cool, dry place away from direct sunlight.
         4. For long-term storage, place in a breathable dust bag after ensuring the hair is completely dry.
         """
-    
+
     def chat(self, user_message: str, session_id: str = None) -> Tuple[str, Dict[str, Any]]:
         """
         Process a user message and generate a response
@@ -327,29 +293,28 @@ class CustomerChatbot:
             Tuple of (response_text, metadata)
         """
         try:
-            # Create chat engine with memory
-            chat_engine = ContextChatEngine.from_defaults(
-                index=self.index,
-                service_context=self.service_context,
-                chat_memory=self.memory,
-                system_prompt="""
-                You are a helpful customer support agent for Luxe Hair Collection, a premium hair extension and wig brand.
-                Your name is Luxe Assistant. Always be polite, professional, and helpful.
-                If you don't know the answer to a question, don't make up information - instead, suggest the customer contact customer service directly.
-                Focus on providing accurate product information, answering questions about hair care, and helping with order inquiries.
-                The current date is {current_date}.
-                """.format(current_date=datetime.now().strftime('%Y-%m-%d'))
-            )
+            # Create context string from chat history
+            context = []
+            context_str = ""
+            if session_id:
+                # Load chat history from database or cache
+                # For simplicity, assume we have a function to load chat history
+                context = self._load_chat_history(session_id)
+                for msg in context:
+                    context_str += f"{msg['role']}: {msg['content']}\n"
             
-            # Process the message
-            response = chat_engine.chat(user_message)
-            response_text = str(response)
+            # Format the prompt
+            prompt = f"{context_str}\nUser: {user_message}\nAssistant:" if context_str else f"User: {user_message}\nAssistant:"
+            
+            # Get response from Nebius
+            response = self.llm.generate(prompt)
+            response_text = response.text
             
             # Generate metadata about the conversation
             metadata = {
                 "timestamp": datetime.now().isoformat(),
                 "session_id": session_id,
-                "sources": self._extract_sources(response),
+                "sources": [],
                 "sentiment": self._analyze_sentiment(user_message),
                 "detected_intent": self._detect_intent(user_message)
             }
@@ -363,16 +328,7 @@ class CustomerChatbot:
                 "timestamp": datetime.now().isoformat(),
                 "session_id": session_id
             }
-    
-    def _extract_sources(self, response) -> List[str]:
-        """Extract sources from the response if available"""
-        try:
-            if hasattr(response, 'source_nodes') and response.source_nodes:
-                return [node.metadata.get('source', 'unknown') for node in response.source_nodes]
-            return []
-        except:
-            return []
-    
+
     def _analyze_sentiment(self, message: str) -> str:
         """Simple sentiment analysis of user message"""
         positive_words = ["love", "great", "good", "amazing", "wonderful", "beautiful", "excellent", "happy", "best", "perfect"]
@@ -389,7 +345,7 @@ class CustomerChatbot:
             return "negative"
         else:
             return "neutral"
-    
+
     def _detect_intent(self, message: str) -> str:
         """Simple intent detection from user message"""
         message_lower = message.lower()
@@ -417,7 +373,7 @@ class CustomerChatbot:
                     return intent
         
         return "general_inquiry"  # Default intent
-    
+
     def get_product_recommendation(self, user_preferences: Dict[str, Any]) -> Dict[str, Any]:
         """
         Get personalized product recommendations based on user preferences
@@ -442,18 +398,10 @@ class CustomerChatbot:
             For each product, include the product type, texture, length, and why it matches their preferences.
             """
             
-            # Create query engine
-            query_engine = self.index.as_query_engine(
-                service_context=self.service_context,
-                similarity_top_k=3
-            )
-            
-            # Get recommendations
-            response = query_engine.query(recommendation_query)
-            
-            # Process recommendations
+            # Get response from Nebius
+            response = self.llm.generate(recommendation_query)
             return {
-                "recommendations": str(response),
+                "recommendations": response.text,
                 "based_on_preferences": user_preferences,
                 "timestamp": datetime.now().isoformat()
             }
@@ -464,3 +412,24 @@ class CustomerChatbot:
                 "error": str(e),
                 "message": "Unable to generate recommendations at this time"
             }
+
+# Example usage
+if __name__ == "__main__":
+    chatbot = CustomerChatbot()
+    
+    # Example conversation
+    context = []
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["quit", "exit"]:
+            break
+            
+        response = chatbot.process_message(user_input, context)
+        print(f"Chatbot: {response}")
+        
+        # Update context
+        context.append({"role": "user", "content": user_input})
+        context.append({"role": "assistant", "content": response})
+        
+        # Keep only last 5 messages
+        context = context[-10:]
