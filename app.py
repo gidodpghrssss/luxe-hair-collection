@@ -58,6 +58,9 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Set port
+app.config['PORT'] = int(os.getenv('PORT', 5000))
+
 # Initialize database
 db = SQLAlchemy(app)
 
@@ -99,12 +102,17 @@ try:
     # Initialize Nebius API
     openai.api_key = os.getenv('NEBIUS_API_KEY')
     openai.api_base = os.getenv('NEBIUS_API_BASE', 'https://api.nebius.cloud/v1')
-    print("Nebius API initialized successfully")
-
-    # Initialize AI components
-    admin_agent = AdminAgent()
-    customer_chatbot = CustomerChatbot()
-    print("AI components initialized successfully")
+    
+    # Check if API key is available
+    if not openai.api_key:
+        print("Warning: NEBIUS_API_KEY not provided. AI features will be limited.")
+    else:
+        print("Nebius API initialized successfully")
+        
+        # Initialize AI components
+        admin_agent = AdminAgent()
+        customer_chatbot = CustomerChatbot()
+        print("AI components initialized successfully")
 except Exception as e:
     print(f"Warning: AI components initialization skipped - {str(e)}")
     admin_agent = None
@@ -1598,4 +1606,4 @@ with app.app_context():
         db.session.commit()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=app.config['PORT'])
