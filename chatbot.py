@@ -1,21 +1,27 @@
 """
-Customer-facing chatbot using Nebius API for Luxe Hair Collection
-Handles product inquiries, FAQ, and support requests
+Customer-facing chatbot for Luxe Hair Collection
+Handles customer inquiries and support requests
 """
 
 import os
 import json
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime
+from typing import Dict, List, Any
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-from nebius import NebiusLLM, NebiusEmbedding
+# Import OpenAI for Nebius compatibility
+from openai import OpenAI
+
+# Initialize client
+nebius_client = OpenAI(
+    api_key=os.getenv('NEBIUS_API_KEY'),
+    base_url='https://api.nebius.ai/v1'
+)
 
 class CustomerChatbot:
-    """Nebius-based chatbot for customer support"""
+    """Customer-facing chatbot for Luxe Hair Collection"""
     
     def __init__(self):
         """Initialize the chatbot with Nebius integration"""
@@ -24,54 +30,131 @@ class CustomerChatbot:
         if not self.nebius_api_key:
             raise ValueError("NEBIUS_API_KEY not found in environment variables")
 
-        # Initialize Nebius LLM
-        self.llm = NebiusLLM(
-            api_key=self.nebius_api_key,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
-        )
+    def get_response(self, user_message: str, chat_history: List[Dict[str, str]]) -> str:
+        """
+        Get AI response to user message with chat history context
         
-        # Initialize Nebius Embedding
-        self.embedding_model = NebiusEmbedding(
-            api_key=self.nebius_api_key
-        )
+        Args:
+            user_message: The user's message
+            chat_history: List of previous messages in chat history
+            
+        Returns:
+            AI response to the user's message
+        """
+        try:
+            # Format chat history
+            messages = [
+                {"role": "system", "content": "You are a helpful customer support assistant for Luxe Hair Collection"}
+            ]
+            
+            # Add chat history
+            for message in chat_history:
+                messages.append({
+                    "role": "user" if message["role"] == "user" else "assistant",
+                    "content": message["content"]
+                })
+            
+            # Add current user message
+            messages.append({"role": "user", "content": user_message})
+            
+            # Get response from Nebius
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=messages
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"Error in chatbot response: {str(e)}")
+            return "I'm sorry, I encountered an error while processing your message. Please try again later."
 
-    def process_message(self, message: str, context: Optional[List[Dict]] = None) -> str:
-        """Process a user message and return a response"""
-        # Create context string from chat history
-        context_str = ""
-        if context:
-            for msg in context:
-                context_str += f"{msg['role']}: {msg['content']}\n"
+    def get_product_recommendations(self, user_query: str, products: List[Dict[str, Any]]) -> str:
+        """
+        Get product recommendations based on user query
         
-        # Format the prompt
-        prompt = f"{context_str}\nUser: {message}\nAssistant:" if context_str else f"User: {message}\nAssistant:"
-        
-        # Get response from Nebius
-        response = self.llm.generate(prompt)
-        return response.text
+        Args:
+            user_query: The user's query about products
+            products: List of available products
+            
+        Returns:
+            AI-generated product recommendations
+        """
+        try:
+            # Format product information
+            product_info = json.dumps(products, indent=2)
+            
+            # Create query with context
+            query = f"""
+            Based on the user's query and available products, provide personalized recommendations:
+            
+            USER QUERY:
+            {user_query}
+            
+            AVAILABLE PRODUCTS:
+            {product_info}
+            
+            Please provide 2-3 relevant product recommendations with reasons why they would be suitable.
+            """
+            
+            # Get response
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are a helpful product recommendation assistant for Luxe Hair Collection"},
+                    {"role": "user", "content": query}
+                ]
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"Error in product recommendations: {str(e)}")
+            return "I'm sorry, I encountered an error while generating recommendations. Please try again later."
 
-    def get_embedding(self, text: str) -> List[float]:
-        """Get embedding for a text"""
-        return self.embedding_model.embed(text)
-
-    def search_similar(self, query: str, documents: List[str], top_k: int = 3) -> List[Tuple[str, float]]:
-        """Find most similar documents to a query"""
-        query_embedding = self.get_embedding(query)
+    def handle_order_inquiry(self, order_id: str, order_data: Dict[str, Any]) -> str:
+        """
+        Handle order status inquiries
         
-        similarities = []
-        for doc in documents:
-            doc_embedding = self.get_embedding(doc)
-            similarity = self._cosine_similarity(query_embedding, doc_embedding)
-            similarities.append((doc, similarity))
-        
-        return sorted(similarities, key=lambda x: x[1], reverse=True)[:top_k]
-
-    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
-        """Calculate cosine similarity between two vectors"""
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
-        norm1 = sum(a * a for a in vec1) ** 0.5
-        norm2 = sum(b * b for b in vec2) ** 0.5
-        return dot_product / (norm1 * norm2)
+        Args:
+            order_id: The order ID being inquired about
+            order_data: Dictionary containing order details
+            
+        Returns:
+            AI-formatted order status response
+        """
+        try:
+            # Format order information
+            order_info = json.dumps(order_data, indent=2)
+            
+            # Create query with context
+            query = f"""
+            Provide a helpful response about order status:
+            
+            ORDER ID: {order_id}
+            ORDER DETAILS:
+            {order_info}
+            
+            Include:
+            1. Current status
+            2. Expected delivery timeline
+            3. Next steps for the customer
+            """
+            
+            # Get response
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are a helpful order status assistant for Luxe Hair Collection"},
+                    {"role": "user", "content": query}
+                ]
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"Error in order inquiry: {str(e)}")
+            return "I'm sorry, I encountered an error while checking your order status. Please try again later."
 
     def _get_product_knowledge(self) -> str:
         """Get knowledge about products"""
@@ -307,8 +390,15 @@ class CustomerChatbot:
             prompt = f"{context_str}\nUser: {user_message}\nAssistant:" if context_str else f"User: {user_message}\nAssistant:"
             
             # Get response from Nebius
-            response = self.llm.generate(prompt)
-            response_text = response.text
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are a helpful customer support assistant for Luxe Hair Collection"},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            
+            response_text = response.choices[0].message.content
             
             # Generate metadata about the conversation
             metadata = {
@@ -399,9 +489,16 @@ class CustomerChatbot:
             """
             
             # Get response from Nebius
-            response = self.llm.generate(recommendation_query)
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are a helpful product recommendation assistant for Luxe Hair Collection"},
+                    {"role": "user", "content": recommendation_query}
+                ]
+            )
+            
             return {
-                "recommendations": response.text,
+                "recommendations": response.choices[0].message.content,
                 "based_on_preferences": user_preferences,
                 "timestamp": datetime.now().isoformat()
             }
@@ -424,7 +521,7 @@ if __name__ == "__main__":
         if user_input.lower() in ["quit", "exit"]:
             break
             
-        response = chatbot.process_message(user_input, context)
+        response = chatbot.get_response(user_input, context)
         print(f"Chatbot: {response}")
         
         # Update context
