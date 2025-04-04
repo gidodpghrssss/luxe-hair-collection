@@ -731,7 +731,10 @@ class AdminAgent:
                 query += f" targeting {target_audience}"
                 
             if products:
-                query += f" featuring the following products:\n{json.dumps([p.get('name', f'Product #{p.get('id', 'unknown')}') for p in products], indent=2)}"
+                query += f"""
+                featuring the following products:
+                {json.dumps([p.get('name', f'Product #{p.get('id', 'unknown')}') for p in products], indent=2)}
+                """
                 
             query += """
             
@@ -823,4 +826,61 @@ class AdminAgent:
             
         except Exception as e:
             print(f"Error generating business dashboard: {e}")
+            return {"success": False, "error": str(e)}
+
+    def generate_marketing_campaign(self, campaign_type: str, target_audience: Optional[str] = None, products: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """
+        Generate marketing campaign suggestions
+        
+        Args:
+            campaign_type: Type of campaign (email, social, seasonal, promotion)
+            target_audience: Target audience description
+            products: List of products to include in the campaign
+        
+        Returns:
+            Dictionary with campaign suggestions
+        """
+        try:
+            # Build the query based on the campaign type
+            query = f"""
+            Generate a {campaign_type} marketing campaign"""
+            
+            if target_audience:
+                query += f" targeting {target_audience}"
+                
+            if products:
+                product_list = json.dumps([
+                    p.get('name', f"Product #{p.get('id', 'unknown')}")
+                    for p in products
+                ], indent=2)
+                query += f"""
+                featuring the following products:
+                {product_list}
+                """
+                
+            query += """
+            
+            Include:
+            1. Campaign theme and messaging
+            2. Key selling points to emphasize
+            3. Call-to-action recommendations
+            4. Timing considerations
+            5. Success metrics to track
+            """
+            
+            campaign = self.query(query, {
+                "campaign_type": campaign_type,
+                "target_audience": target_audience,
+                "products": products
+            })
+            
+            return {
+                "success": True,
+                "campaign_type": campaign_type,
+                "target_audience": target_audience,
+                "campaign_suggestions": campaign
+            }
+            
+        except Exception as e:
+            print(f"Error generating marketing campaign: {e}")
             return {"success": False, "error": str(e)}
