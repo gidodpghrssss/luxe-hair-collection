@@ -4,27 +4,22 @@ Handles product management, user management, and AI-powered analytics
 """
 
 import os
+from typing import List, Dict, Optional, Any
 import json
-from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 from dotenv import load_dotenv
-
-# LlamaIndex imports
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext, StorageContext, load_index_from_storage
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
-from llama_index.node_parser import SimpleNodeParser
-from llama_index.chat_engine import ContextChatEngine
-from llama_index.memory import ChatMemoryBuffer
 
 # Load environment variables
 load_dotenv()
 
+# Import Nebius directly instead of LlamaIndex
+from nebius import NebiusLLM, NebiusEmbedding
+
 class AdminAgent:
-    """LlamaIndex-based admin agent for managing the Luxe Hair business"""
+    """Luxe Hair business admin agent"""
     
     def __init__(self):
-        """Initialize the admin agent with LlamaIndex and Nebius integration"""
+        """Initialize the admin agent with Nebius integration"""
         self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
         
         if not self.nebius_api_key:
@@ -40,67 +35,6 @@ class AdminAgent:
         self.embedding_model = NebiusEmbedding(
             api_key=self.nebius_api_key
         )
-        
-        # Create service context
-        self.service_context = ServiceContext.from_defaults(
-            llm=self.llm,
-            embed_model=self.embedding_model
-        )
-        
-        # Initialize node parser
-        self.node_parser = SimpleNodeParser.from_defaults(
-            service_context=self.service_context
-        )
-        
-        # Load or create index
-        self.storage_context = StorageContext.from_defaults()
-        try:
-            self.index = load_index_from_storage(self.storage_context)
-        except Exception:
-            self.index = VectorStoreIndex([], service_context=self.service_context)
-    
-    def _setup_knowledge_base(self):
-        """Set up the agent's knowledge base using LlamaIndex"""
-        # In production (like Render), we won't be able to persist storage between deploys
-        # So we'll create the knowledge base each time
-        is_production = os.getenv('FLASK_ENV') == 'production'
-        storage_dir = os.path.join(os.getcwd(), "storage")
-        
-        if not is_production and os.path.exists(storage_dir):
-            try:
-                # Load existing index in development
-                storage_context = StorageContext.from_defaults(persist_dir=storage_dir)
-                self.index = load_index_from_storage(storage_context, service_context=self.service_context)
-                print("Loaded existing knowledge base")
-            except Exception as e:
-                print(f"Error loading existing index: {e}")
-                self._create_new_knowledge_base(storage_dir)
-        else:
-            self._create_new_knowledge_base(storage_dir)
-    
-    def _create_new_knowledge_base(self, storage_dir: str):
-        """Create a new knowledge base with business knowledge"""
-        # Create business knowledge documents
-        documents = [
-            Document(text=self._get_hair_product_knowledge(), metadata={"source": "product_knowledge"}),
-            Document(text=self._get_business_operations_knowledge(), metadata={"source": "operations"}),
-            Document(text=self._get_customer_service_knowledge(), metadata={"source": "customer_service"})
-        ]
-        
-        # Parse nodes
-        parser = SimpleNodeParser.from_defaults()
-        nodes = parser.get_nodes_from_documents(documents)
-        
-        # Create index
-        self.index = VectorStoreIndex(nodes, service_context=self.service_context)
-        
-        # Save index in development environment only
-        if os.getenv('FLASK_ENV') != 'production':
-            os.makedirs(storage_dir, exist_ok=True)
-            self.index.storage_context.persist(persist_dir=storage_dir)
-            print("Created and saved new knowledge base")
-        else:
-            print("Created in-memory knowledge base (not persisted in production)")
     
     def _get_hair_product_knowledge(self) -> str:
         """Get knowledge about hair products"""
@@ -210,7 +144,7 @@ class AdminAgent:
     
     def query(self, user_query: str, business_data: Optional[Dict[str, Any]] = None) -> str:
         """
-        Process a business query using LlamaIndex and Nebius integration
+        Process a business query using Nebius integration
         
         Args:
             user_query: The user's question or instruction
@@ -225,12 +159,6 @@ class AdminAgent:
             if business_data:
                 context = f"\nBUSINESS DATA:\n{json.dumps(business_data, indent=2)}\n\n"
             
-            # Create a query engine
-            query_engine = self.index.as_query_engine(
-                service_context=self.service_context,
-                similarity_top_k=3
-            )
-            
             # Format the full query with business context
             full_query = f"""
             As an AI business assistant for Luxe Hair Collection, analyze the following query:
@@ -242,8 +170,8 @@ class AdminAgent:
             Provide detailed analysis and actionable recommendations based on the hair business context.
             """
             
-            # Query the index
-            response = query_engine.query(full_query)
+            # Query the Nebius LLM
+            response = self.llm(query=full_query)
             return str(response)
             
         except Exception as e:
@@ -261,12 +189,9 @@ class AdminAgent:
             Dictionary with inventory analysis and recommendations
         """
         try:
-            # Convert to DataFrame for analysis
-            df = pd.DataFrame(products)
-            
             # Basic inventory analytics
             low_stock_threshold = 5
-            low_stock_items = df[df['stock'] <= low_stock_threshold][['name', 'stock', 'category']].to_dict('records')
+            low_stock_items = [p for p in products if p['stock'] <= low_stock_threshold]
             
             # Get recommendations from the AI
             inventory_query = f"""
