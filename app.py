@@ -351,8 +351,18 @@ def generate_sales_chart():
 # Routes - Customer Side
 @app.route('/')
 def home():
-    featured_products = Product.query.filter(Product.tags.contains('featured')).limit(8).all()
-    return render_template('customer/index.html', products=featured_products)
+    """Home page with featured products"""
+    try:
+        # Get featured products (top 6 by sales)
+        featured_products = Product.query.order_by(Product.sales.desc()).limit(6).all()
+        
+        # Add current year to template context
+        return render_template('customer/index.html', 
+                             products=featured_products,
+                             current_year=datetime.now().year)
+    except Exception as e:
+        print(f"Error in home route: {str(e)}")
+        return render_template('customer/index.html', products=[], error=str(e))
 
 @app.route('/shop')
 def shop():
