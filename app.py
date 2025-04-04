@@ -17,12 +17,9 @@ except ImportError:
         print("Warning: Shopify API could not be imported. Some features may not work.")
         shopify = None
 
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms.nebius import NebiusLLM
-from llama_index.embeddings.nebius import NebiusEmbedding
-from llama_index.node_parser import SimpleNodeParser
-from llama_index.chat_engine import ContextChatEngine
-from llama_index.memory import ChatMemoryBuffer
+# Import Nebius directly instead of LlamaIndex
+from nebius import NebiusLLM, NebiusEmbedding
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -89,10 +86,8 @@ if nebius_api_key:
             model=nebius_embeddings_model
         )
         
-        service_context = ServiceContext.from_defaults(
-            llm=llm,
-            embed_model=embedding_model
-        )
+        service_context = None  # Removed service context initialization
+        
         print("Nebius API initialized successfully")
     except Exception as e:
         print(f"Error initializing Nebius API: {e}")
