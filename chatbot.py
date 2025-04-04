@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from nebius_ai import NebiusLLM, NebiusEmbedding
+from nebius import NebiusLLM, NebiusEmbedding
 
 class CustomerChatbot:
     """Nebius-based chatbot for customer support"""
