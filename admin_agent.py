@@ -731,9 +731,13 @@ class AdminAgent:
                 query += f" targeting {target_audience}"
                 
             if products:
+                product_list = json.dumps([
+                    p.get('name', 'Product #{}'.format(p.get('id', 'unknown')))
+                    for p in products
+                ], indent=2)
                 query += f"""
                 featuring the following products:
-                {json.dumps([p.get('name', f'Product #{p.get('id', 'unknown')}') for p in products], indent=2)}
+                {product_list}
                 """
                 
             query += """
@@ -850,7 +854,7 @@ class AdminAgent:
                 
             if products:
                 product_list = json.dumps([
-                    p.get('name', f"Product #{p.get('id', 'unknown')}")
+                    p.get('name', 'Product #{}'.format(p.get('id', 'unknown')))
                     for p in products
                 ], indent=2)
                 query += f"""
