@@ -27,6 +27,7 @@ try:
     print("Nebius API initialized successfully")
 except Exception as e:
     print(f"Error initializing Nebius API: {str(e)}")
+    openai = None  # Set to None if initialization fails
 
 import pandas as pd
 import numpy as np
@@ -733,26 +734,41 @@ def order_confirmation(order_id):
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
-        flash('Access denied: Admin privileges required', 'danger')
+        flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('home'))
     
-    # Get counts for dashboard
-    product_count = Product.query.count()
-    user_count = User.query.count()
-    order_count = Order.query.count()
+    # Get sales data for chart
+    sales_chart = generate_sales_chart()
     
     # Get recent orders
     recent_orders = Order.query.order_by(Order.order_date.desc()).limit(5).all()
     
-    # Generate sales chart
-    sales_chart = generate_sales_chart()
+    # Get product inventory stats
+    products = Product.query.all()
     
-    return render_template('admin/dashboard.html', 
-                          product_count=product_count,
-                          user_count=user_count,
-                          order_count=order_count,
-                          recent_orders=recent_orders,
-                          sales_chart=sales_chart)
+    return render_template('admin/dashboard.html',
+                         sales_chart=sales_chart,
+                         recent_orders=recent_orders,
+                         products=products)
+
+@app.route('/admin/analytics')
+@login_required
+def admin_analytics():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('home'))
+    
+    # Get analytics data
+    total_sales = db.session.query(func.sum(Order.total_amount)).scalar() or 0
+    total_orders = Order.query.count()
+    total_products = Product.query.count()
+    total_customers = User.query.filter_by(is_admin=False).count()
+    
+    return render_template('admin/analytics.html',
+                         total_sales=total_sales,
+                         total_orders=total_orders,
+                         total_products=total_products,
+                         total_customers=total_customers)
 
 @app.route('/admin/products')
 @login_required

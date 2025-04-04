@@ -7,28 +7,38 @@ import os
 import json
 from typing import Dict, List, Any
 from dotenv import load_dotenv
+from datetime import datetime
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import current_user
+from app.models import ChatHistory
+import openai
 
-# Load environment variables
 load_dotenv()
 
-# Import OpenAI for Nebius compatibility
-from openai import OpenAI
-
-# Initialize client
-nebius_client = OpenAI(
-    api_key=os.getenv('NEBIUS_API_KEY'),
-    base_url='https://api.nebius.ai/v1'
-)
+# Initialize Nebius API
+try:
+    openai.api_key = os.getenv('NEBIUS_API_KEY')
+    openai.api_base = os.getenv('NEBIUS_API_BASE', 'https://api.nebius.cloud/v1')
+    print("Nebius API initialized successfully")
+except Exception as e:
+    print(f"Error initializing Nebius API: {str(e)}")
+    openai = None
 
 class CustomerChatbot:
     """Customer-facing chatbot for Luxe Hair Collection"""
     
     def __init__(self):
         """Initialize the chatbot with Nebius integration"""
-        self.nebius_api_key = os.getenv('NEBIUS_API_KEY')
+        self.session_id = None
+        self.context = []
+        self.system_message = """You are a helpful customer service assistant for Luxe Hair Collection. 
+        Your role is to assist customers with inquiries about our hair products, 
+        order status, and general support. Always be polite and professional.
+        """
         
-        if not self.nebius_api_key:
-            raise ValueError("NEBIUS_API_KEY not found in environment variables")
+        if not openai:
+            raise ValueError("Nebius API not initialized")
 
     def get_response(self, user_message: str, chat_history: List[Dict[str, str]]) -> str:
         """
@@ -44,7 +54,7 @@ class CustomerChatbot:
         try:
             # Format chat history
             messages = [
-                {"role": "system", "content": "You are a helpful customer support assistant for Luxe Hair Collection"}
+                {"role": "system", "content": self.system_message}
             ]
             
             # Add chat history
@@ -58,7 +68,7 @@ class CustomerChatbot:
             messages.append({"role": "user", "content": user_message})
             
             # Get response from Nebius
-            response = nebius_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="llama-3-8b-instruct",
                 messages=messages
             )
@@ -98,7 +108,7 @@ class CustomerChatbot:
             """
             
             # Get response
-            response = nebius_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="llama-3-8b-instruct",
                 messages=[
                     {"role": "system", "content": "You are a helpful product recommendation assistant for Luxe Hair Collection"},
@@ -142,7 +152,7 @@ class CustomerChatbot:
             """
             
             # Get response
-            response = nebius_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="llama-3-8b-instruct",
                 messages=[
                     {"role": "system", "content": "You are a helpful order status assistant for Luxe Hair Collection"},
@@ -390,10 +400,10 @@ class CustomerChatbot:
             prompt = f"{context_str}\nUser: {user_message}\nAssistant:" if context_str else f"User: {user_message}\nAssistant:"
             
             # Get response from Nebius
-            response = nebius_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="llama-3-8b-instruct",
                 messages=[
-                    {"role": "system", "content": "You are a helpful customer support assistant for Luxe Hair Collection"},
+                    {"role": "system", "content": self.system_message},
                     {"role": "user", "content": prompt}
                 ]
             )
@@ -489,7 +499,7 @@ class CustomerChatbot:
             """
             
             # Get response from Nebius
-            response = nebius_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="llama-3-8b-instruct",
                 messages=[
                     {"role": "system", "content": "You are a helpful product recommendation assistant for Luxe Hair Collection"},
@@ -509,6 +519,64 @@ class CustomerChatbot:
                 "error": str(e),
                 "message": "Unable to generate recommendations at this time"
             }
+
+    def handle_message(self, message):
+        try:
+            if not openai:
+                return "I'm sorry, but the AI service is currently unavailable. Please try again later."
+
+            # Save chat history
+            chat = ChatHistory(
+                user_id=current_user.id,
+                session_id=self.session_id or str(datetime.now().timestamp()),
+                user_message=message,
+                bot_response="",  # Will be updated after getting response
+                chat_metadata=json.dumps({
+                    'user_id': current_user.id,
+                    'timestamp': datetime.now().isoformat()
+                })
+            )
+            db.session.add(chat)
+            db.session.commit()
+
+            # Get response from Nebius API
+            response = openai.ChatCompletion.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": self.system_message},
+                    {"role": "user", "content": message}
+                ]
+            )
+
+            # Update chat history with response
+            chat.bot_response = response.choices[0].message.content
+            db.session.commit()
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            print(f"Error in chatbot: {str(e)}")
+            return "I'm sorry, but I encountered an error while processing your request. Please try again later."
+
+    def get_chat_history(self):
+        try:
+            if not self.session_id:
+                return []
+            
+            chats = ChatHistory.query.filter_by(
+                user_id=current_user.id,
+                session_id=self.session_id
+            ).order_by(ChatHistory.timestamp).all()
+            
+            return [{
+                'user_message': chat.user_message,
+                'bot_response': chat.bot_response,
+                'timestamp': chat.timestamp.isoformat()
+            } for chat in chats]
+
+        except Exception as e:
+            print(f"Error getting chat history: {str(e)}")
+            return []
 
 # Example usage
 if __name__ == "__main__":
