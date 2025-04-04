@@ -364,7 +364,7 @@ class CustomerChatbot:
         4. For long-term storage, place in a breathable dust bag after ensuring the hair is completely dry.
         """
 
-    def chat(self, user_message: str, session_id: str = None) -> Tuple[str, Dict[str, Any]]:
+    def chat(self, user_message: str, session_id: str = None) -> tuple[str, Dict[str, Any]]:
         """
         Process a user message and generate a response
         
