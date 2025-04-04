@@ -1,5 +1,13 @@
-from .. import app, db
-from ..models import Product
+import os
+import sys
+from pathlib import Path
+
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
+from app import app, db
+from app.models import Product
 
 def upgrade():
     with app.app_context():
