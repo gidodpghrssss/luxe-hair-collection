@@ -16,7 +16,7 @@ SQLAlchemy==2.0.23
 ShopifyAPI==12.2.0
 
 # AI and ML dependencies
-nebius==0.2.18
+nebius==0.2.18  # Confirmed working version
 openai==1.60.2
 langchain==0.0.335
 pymupdf==1.23.7

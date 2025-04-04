@@ -17,7 +17,8 @@ except ImportError:
         print("Warning: Shopify API could not be imported. Some features may not work.")
         shopify = None
 
-# Import Nebius directly
+# Import Nebius components
+from nebius import NebiusClient  # Main client class
 from nebius.llms import NebiusLLM
 from nebius.embeddings import NebiusEmbedding
 
