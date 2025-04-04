@@ -175,7 +175,7 @@ class ChatHistory(db.Model):
     session_id = db.Column(db.String(100))
     user_message = db.Column(db.Text, nullable=False)
     bot_response = db.Column(db.Text, nullable=False)
-    metadata = db.Column(db.Text)
+    chat_metadata = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AdminAction(db.Model):
@@ -430,7 +430,7 @@ def chat_api():
                 session_id=session_id,
                 user_message=user_message,
                 bot_response=response,
-                metadata=json.dumps(metadata) if metadata else None
+                chat_metadata=json.dumps(metadata) if metadata else None
             )
             db.session.add(chat_history)
             db.session.commit()
