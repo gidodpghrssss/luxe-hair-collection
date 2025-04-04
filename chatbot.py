@@ -5,14 +5,14 @@ Handles customer inquiries and support requests
 
 import os
 import json
-from typing import Dict, List, Any
-from dotenv import load_dotenv
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import current_user
 from app.models import ChatHistory
 import openai
+from dotenv import load_dotenv
+from typing import Dict, List, Any
 
 load_dotenv()
 
