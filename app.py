@@ -17,8 +17,9 @@ except ImportError:
         print("Warning: Shopify API could not be imported. Some features may not work.")
         shopify = None
 
-# Import Nebius directly instead of LlamaIndex
-from nebius import NebiusLLM, NebiusEmbedding
+# Import Nebius directly
+from nebius.llms import NebiusLLM
+from nebius.embeddings import NebiusEmbedding
 
 import pandas as pd
 import numpy as np
