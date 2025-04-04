@@ -385,7 +385,10 @@ def home():
                              current_year=datetime.now().year)
     except Exception as e:
         print(f"Error in home route: {str(e)}")
-        return render_template('customer/index.html', products=[], error=str(e))
+        # Return empty list if there's an error
+        return render_template('customer/index.html', 
+                             products=[],
+                             current_year=datetime.now().year)
 
 @app.route('/shop')
 def shop():
