@@ -1,5 +1,5 @@
-from app import app, db
-from app.models import Product
+from .. import app, db
+from ..models import Product
 
 def upgrade():
     with app.app_context():
