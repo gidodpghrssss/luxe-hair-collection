@@ -137,6 +137,7 @@ class User(db.Model, UserMixin):
     chats = db.relationship('ChatHistory', backref='user', lazy=True)
 
 class Product(db.Model):
+    """Model for hair products"""
     id = db.Column(db.Integer, primary_key=True)
     shopify_id = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100), nullable=False)
@@ -145,8 +146,9 @@ class Product(db.Model):
     sale_price = db.Column(db.Float)
     image_url = db.Column(db.String(200))
     category = db.Column(db.String(50))
-    tags = db.Column(db.String(200))
+    tags = db.Column(db.String(200))  # Comma-separated tags
     stock = db.Column(db.Integer, default=0)
+    sales = db.Column(db.Integer, default=0)  # Added sales column with default value
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
@@ -354,7 +356,7 @@ def home():
     """Home page with featured products"""
     try:
         # Get featured products (top 6 by sales)
-        featured_products = Product.query.order_by(Product.sales.desc()).limit(6).all()
+        featured_products = Product.query.filter(Product.tags.contains('featured')).limit(6).all()
         
         # Add current year to template context
         return render_template('customer/index.html', 
