@@ -21,7 +21,12 @@ except ImportError:
 import openai
 
 # Initialize client
-openai.api_key = os.getenv('NEBIUS_API_KEY')
+try:
+    openai.api_key = os.getenv('NEBIUS_API_KEY')
+    openai.api_base = os.getenv('NEBIUS_API_BASE', 'https://api.nebius.cloud/v1')
+    print("Nebius API initialized successfully")
+except Exception as e:
+    print(f"Error initializing Nebius API: {str(e)}")
 
 import pandas as pd
 import numpy as np
@@ -88,6 +93,22 @@ if nebius_api_key:
         print(f"Error initializing Nebius API: {e}")
 else:
     print("Warning: Nebius API key not provided. AI features will not be available.")
+
+# Initialize AI components
+try:
+    # Initialize Nebius API
+    openai.api_key = os.getenv('NEBIUS_API_KEY')
+    openai.api_base = os.getenv('NEBIUS_API_BASE', 'https://api.nebius.cloud/v1')
+    print("Nebius API initialized successfully")
+
+    # Initialize AI components
+    admin_agent = AdminAgent()
+    customer_chatbot = CustomerChatbot()
+    print("AI components initialized successfully")
+except Exception as e:
+    print(f"Warning: AI components initialization skipped - {str(e)}")
+    admin_agent = None
+    customer_chatbot = None
 
 # Initialize VirtualTryOn, AdminAgent, and CustomerChatbot
 virtual_try_on = None
