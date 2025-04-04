@@ -12,8 +12,14 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import Nebius directly instead of LlamaIndex
-from nebius import NebiusLLM, NebiusEmbedding
+# Import Nebius using OpenAI-compatible API
+from openai import OpenAI
+
+# Initialize client
+nebius_client = OpenAI(
+    api_key=os.getenv('NEBIUS_API_KEY'),
+    base_url='https://api.nebius.ai/v1'
+)
 
 class AdminAgent:
     """Luxe Hair business admin agent"""
@@ -25,17 +31,6 @@ class AdminAgent:
         if not self.nebius_api_key:
             raise ValueError("NEBIUS_API_KEY not found in environment variables")
 
-        # Initialize Nebius LLM
-        self.llm = NebiusLLM(
-            api_key=self.nebius_api_key,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
-        )
-        
-        # Initialize Nebius Embedding
-        self.embedding_model = NebiusEmbedding(
-            api_key=self.nebius_api_key
-        )
-    
     def _get_hair_product_knowledge(self) -> str:
         """Get knowledge about hair products"""
         return """
@@ -154,29 +149,33 @@ class AdminAgent:
             AI response with analysis and recommendations
         """
         try:
-            # Format business data as context if provided
-            context = ""
-            if business_data:
-                context = f"\nBUSINESS DATA:\n{json.dumps(business_data, indent=2)}\n\n"
-            
             # Format the full query with business context
             full_query = f"""
             As an AI business assistant for Luxe Hair Collection, analyze the following query:
             
-            {context}
+            USER QUERY:
+            {user_query}
             
-            USER QUERY: {user_query}
+            BUSINESS CONTEXT:
+            {business_data if business_data else "No additional business data provided"}
             
             Provide detailed analysis and actionable recommendations based on the hair business context.
             """
             
-            # Query the Nebius LLM
-            response = self.llm(query=full_query)
-            return str(response)
+            # Query the Nebius API using OpenAI-compatible interface
+            response = nebius_client.chat.completions.create(
+                model="llama-3-8b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are an AI business assistant for Luxe Hair Collection"},
+                    {"role": "user", "content": full_query}
+                ]
+            )
+            
+            return response.choices[0].message.content
             
         except Exception as e:
-            print(f"Error in admin agent query: {e}")
-            return f"I encountered an error analyzing your query. Please try again or rephrase your question. Error: {str(e)}"
+            print(f"Error in admin agent query: {str(e)}")
+            return "I'm sorry, I encountered an error while processing your request. Please try again later."
     
     def analyze_inventory(self, products: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

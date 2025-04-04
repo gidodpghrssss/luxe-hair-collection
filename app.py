@@ -18,13 +18,10 @@ except ImportError:
         shopify = None
 
 # Import Nebius components
-from openai import OpenAI
+import openai
 
 # Initialize client
-nebius_client = OpenAI(
-    api_key=os.getenv('NEBIUS_API_KEY'),
-    base_url='https://api.nebius.ai/v1'
-)
+openai.api_key = os.getenv('NEBIUS_API_KEY')
 
 import pandas as pd
 import numpy as np
@@ -82,8 +79,8 @@ service_context = None
 
 if nebius_api_key:
     try:
-        llm = nebius_client
-        embedding_model = nebius_client
+        llm = openai
+        embedding_model = openai
         service_context = None  # Removed service context initialization
         
         print("Nebius API initialized successfully")
@@ -270,7 +267,7 @@ def get_nebius_response(prompt, system_message="You are a helpful assistant for 
         ]
 
         # Get response
-        response = nebius_client.chat.create(
+        response = openai.ChatCompletion.create(
             model="llama-3-8b-instruct",
             messages=messages
         )
