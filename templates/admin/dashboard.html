@@ -99,21 +99,48 @@
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
                     <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="dropdown-toggle" href="#" role="button" id="salesDropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
-                            <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
-                            <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
-                            <li><a class="dropdown-item" href="#">Last 3 Months</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">Export Data</a></li>
-                        </ul>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="salesDropdown">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" id="toggleLineChart">Toggle Line Chart</a>
+                            <a class="dropdown-item" href="#" id="toggleBarChart">Toggle Bar Chart</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="chart-area">
-                        <canvas id="salesChart"></canvas>
+                        <!-- Image Chart -->
+                        {% if sales_chart and sales_chart|length > 100 %}  <!-- Check if it's a base64 image -->
+                            <img src="data:image/png;base64,{{ sales_chart }}" class="img-fluid" alt="Sales Chart">
+                        {% else %}
+                            <!-- Fallback to table if chart generation failed -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Sales Amount ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if sales_chart and sales_chart.dates %}
+                                            {% for date, amount in sales_chart.dates|zip(sales_chart.amounts) %}
+                                                <tr>
+                                                    <td>{{ date }}</td>
+                                                    <td>${{ "%.2f"|format(amount) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="2" class="text-center">No sales data available</td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -269,124 +296,44 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Sales Chart
-        var ctx = document.getElementById('salesChart').getContext('2d');
-        var salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [{
-                    label: 'Sales',
-                    data: [{{ monthly_sales|join(', ') }}],
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                    borderColor: 'rgba(78, 115, 223, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
-                    pointHoverBorderColor: '#fff',
-                    pointHitRadius: 10,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+document.addEventListener('DOMContentLoaded', function() {
+    // AI Assistant
+    const askAIButton = document.getElementById('askAI');
+    const aiQuery = document.getElementById('aiQuery');
+    const aiResponse = document.getElementById('aiResponse');
+    
+    askAIButton.addEventListener('click', function() {
+        const query = aiQuery.value.trim();
+        if (query) {
+            // Show loading state
+            aiResponse.innerHTML = '<p class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Thinking...</p>';
+            
+            // Make API call to the backend
+            fetch('{{ url_for("admin_ai_assistant") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Category Chart
-        var ctxPie = document.getElementById('categoryChart').getContext('2d');
-        var categoryChart = new Chart(ctxPie, {
-            type: 'doughnut',
-            data: {
-                labels: ['Brazilian Hair', 'Peruvian Hair', 'Malaysian Hair', 'Indian Hair', 'Other'],
-                datasets: [{
-                    data: [35, 25, 20, 15, 5],
-                    backgroundColor: [
-                        '#4e73df',
-                        '#1cc88a',
-                        '#36b9cc',
-                        '#f6c23e',
-                        '#e74a3b'
-                    ],
-                    hoverBackgroundColor: [
-                        '#2e59d9',
-                        '#17a673',
-                        '#2c9faf',
-                        '#dda20a',
-                        '#be2617'
-                    ],
-                    hoverBorderColor: 'rgba(234, 236, 244, 1)',
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                cutout: '70%'
-            }
-        });
-        
-        // AI Assistant
-        const askAIButton = document.getElementById('askAI');
-        const aiQuery = document.getElementById('aiQuery');
-        const aiResponse = document.getElementById('aiResponse');
-        
-        askAIButton.addEventListener('click', function() {
-            const query = aiQuery.value.trim();
-            if (query) {
-                // Show loading state
-                aiResponse.innerHTML = '<p class="text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Thinking...</p>';
-                
-                // Make API call to the backend
-                fetch('{{ url_for("admin_ai_assistant") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ query: query })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    aiResponse.innerHTML = `<p>${data.response}</p>`;
-                    aiQuery.value = '';
-                })
-                .catch(error => {
-                    aiResponse.innerHTML = '<p class="text-danger">Error: Could not get a response from the AI assistant.</p>';
-                    console.error('Error:', error);
-                });
-            }
-        });
-        
-        // Allow pressing Enter to submit AI query
-        aiQuery.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                askAIButton.click();
-            }
-        });
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                aiResponse.innerHTML = `<p>${data.response}</p>`;
+                aiQuery.value = '';
+            })
+            .catch(error => {
+                aiResponse.innerHTML = '<p class="text-danger">Error: Could not get a response from the AI assistant.</p>';
+                console.error('Error:', error);
+            });
+        }
     });
+    
+    // Allow pressing Enter to submit AI query
+    aiQuery.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            askAIButton.click();
+        }
+    });
+});
 </script>
 {% endblock %}

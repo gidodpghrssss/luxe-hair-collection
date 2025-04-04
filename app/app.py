@@ -37,9 +37,9 @@ from io import BytesIO
 import base64
 
 # Import our custom modules
-from virtual_try_on import VirtualTryOn
-from admin_agent import AdminAgent
-from chatbot import CustomerChatbot
+from app.virtual_try_on import VirtualTryOn
+from app.admin_agent import AdminAgent
+from app.chatbot import CustomerChatbot
 
 # Load environment variables
 load_dotenv()
@@ -65,6 +65,9 @@ app.config['PORT'] = int(os.getenv('PORT', 5000))
 
 # Initialize database
 db = SQLAlchemy(app)
+
+# Import models
+from app.models import User
 
 # Initialize login manager
 login_manager = LoginManager()
