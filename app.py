@@ -18,9 +18,13 @@ except ImportError:
         shopify = None
 
 # Import Nebius components
-from nebius import NebiusClient  # Main client class
-from nebius.llms import NebiusLLM
-from nebius.embeddings import NebiusEmbedding
+from openai import OpenAI
+
+# Initialize client
+nebius_client = OpenAI(
+    api_key=os.getenv('NEBIUS_API_KEY'),
+    base_url='https://api.nebius.ai/v1'
+)
 
 import pandas as pd
 import numpy as np
@@ -78,16 +82,8 @@ service_context = None
 
 if nebius_api_key:
     try:
-        llm = NebiusLLM(
-            api_key=nebius_api_key,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
-        )
-        
-        embedding_model = NebiusEmbedding(
-            api_key=nebius_api_key,
-            model=nebius_embeddings_model
-        )
-        
+        llm = nebius_client
+        embedding_model = nebius_client
         service_context = None  # Removed service context initialization
         
         print("Nebius API initialized successfully")
@@ -267,11 +263,6 @@ def get_nebius_response(prompt, system_message="You are a helpful assistant for 
         if not NEBIUS_API_KEY:
             raise ValueError("NEBIUS_API_KEY not found in environment variables")
 
-        llm = NebiusLLM(
-            api_key=NEBIUS_API_KEY,
-            model="meta-llama/Meta-Llama-3.1-70B-Instruct-fast"
-        )
-
         # Create a chat message history
         messages = [
             {"role": "system", "content": system_message},
@@ -279,8 +270,11 @@ def get_nebius_response(prompt, system_message="You are a helpful assistant for 
         ]
 
         # Get response
-        response = llm.chat(messages)
-        return response.text
+        response = nebius_client.chat.create(
+            model="llama-3-8b-instruct",
+            messages=messages
+        )
+        return response.choices[0].message.content
     except Exception as e:
         print(f"Error in get_nebius_response: {str(e)}")
         return "I'm sorry, I encountered an error while processing your request. Please try again later."
